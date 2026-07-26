@@ -146,15 +146,15 @@
     );
   position: relative;
   overflow: hidden;
-}
 
-@utility placeholder-img::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--leaf) 20%, transparent), transparent 60%),
-    radial-gradient(circle at 70% 70%, color-mix(in oklab, var(--turmeric) 20%, transparent), transparent 60%);
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--leaf) 20%, transparent), transparent 60%),
+      radial-gradient(circle at 70% 70%, color-mix(in oklab, var(--turmeric) 20%, transparent), transparent 60%);
+  }
 }
 
 @utility hide-scrollbar {
