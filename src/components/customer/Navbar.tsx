@@ -1,10 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, Menu, Search, ShoppingBag, User, X, ChevronDown, Leaf } from "lucide-react";
+import { Search, X, ChevronDown, Leaf, Menu } from "lucide-react";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useCart } from "@/stores/cart";
-import { useWishlist } from "@/stores/wishlist";
+import { AnimatePresence, motion } from "framer-motion";
 import { categories, products } from "@/lib/data";
+import { useUI } from "@/stores/ui";
 import { cn } from "@/lib/utils";
 
 function Logo() {
@@ -74,21 +73,19 @@ function SearchBar({ mobile = false }: { mobile?: boolean }) {
 }
 
 export function Navbar() {
-  const cartCount = useCart((s) => s.count());
-  const wishCount = useWishlist((s) => s.ids.length);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const openMobileMenu = useUI((s) => s.openMobileMenu);
   const [dropdown, setDropdown] = useState<null | "cat" | "about" | "cust">(null);
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
       <div className="mx-auto max-w-7xl px-4">
         {/* Top row */}
-        <div className="flex h-16 items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex h-16 items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
             <button
-              onClick={() => setMobileOpen(true)}
-              className="grid h-10 w-10 place-items-center rounded-full lg:hidden hover:bg-secondary"
-              aria-label="Menu"
+              onClick={openMobileMenu}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-secondary lg:hidden"
+              aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -97,37 +94,13 @@ export function Navbar() {
           <div className="hidden flex-1 lg:block">
             <SearchBar />
           </div>
-          <div className="flex items-center gap-1">
+          {/* Desktop-only quick admin link */}
+          <div className="hidden lg:block">
             <Link
-              to="/wishlist"
-              className="relative hidden h-10 w-10 place-items-center rounded-full hover:bg-secondary sm:grid"
-              aria-label="Wishlist"
+              to="/admin"
+              className="rounded-full border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
             >
-              <Heart className="h-5 w-5" />
-              {wishCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-sale px-1 text-[10px] font-bold text-primary-foreground">
-                  {wishCount}
-                </span>
-              )}
-            </Link>
-            <Link
-              to="/cart"
-              className="relative grid h-10 w-10 place-items-center rounded-full hover:bg-secondary"
-              aria-label="Cart"
-            >
-              <ShoppingBag className="h-5 w-5" />
-              {cartCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-sale px-1 text-[10px] font-bold text-primary-foreground">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-            <Link
-              to="/profile"
-              className="grid h-10 w-10 place-items-center rounded-full hover:bg-secondary"
-              aria-label="Profile"
-            >
-              <User className="h-5 w-5" />
+              Admin Panel
             </Link>
           </div>
         </div>
@@ -137,9 +110,13 @@ export function Navbar() {
           <SearchBar mobile />
         </div>
 
-        {/* Secondary nav */}
+        {/* Secondary desktop nav */}
         <nav className="hidden items-center gap-1 border-t border-border py-2 text-sm font-medium lg:flex">
-          <Link to="/" className="rounded-full px-3 py-1.5 hover:bg-secondary" activeProps={{ className: "bg-secondary text-primary" }}>
+          <Link
+            to="/"
+            className="rounded-full px-3 py-1.5 hover:bg-secondary"
+            activeProps={{ className: "bg-secondary text-primary" }}
+          >
             Home
           </Link>
           <div
@@ -203,13 +180,17 @@ export function Navbar() {
                   exit={{ opacity: 0, y: 6 }}
                   className="absolute left-0 top-full z-40 mt-1 w-64 rounded-2xl border border-border bg-card p-3 shadow-lift"
                 >
-                  {["100% Natural", "No Pesticides", "No Artificial Colour", "No Chemicals", "Handmade"].map(
-                    (t) => (
-                      <div key={t} className="rounded-xl px-3 py-2 text-sm hover:bg-secondary">
-                        {t}
-                      </div>
-                    ),
-                  )}
+                  {[
+                    "100% Natural",
+                    "No Pesticides",
+                    "No Artificial Colour",
+                    "No Chemicals",
+                    "Handmade",
+                  ].map((t) => (
+                    <div key={t} className="rounded-xl px-3 py-2 text-sm hover:bg-secondary">
+                      {t}
+                    </div>
+                  ))}
                   <Link
                     to="/about"
                     className="mt-2 block rounded-full bg-primary py-2 text-center text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
@@ -255,88 +236,8 @@ export function Navbar() {
               )}
             </AnimatePresence>
           </div>
-
-          <div className="ml-auto">
-            <Link
-              to="/admin"
-              className="rounded-full border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              Admin Panel
-            </Link>
-          </div>
         </nav>
       </div>
-
-      {/* Mobile drawer */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMobileOpen(false)}
-              className="fixed inset-0 z-40 bg-foreground/40"
-            />
-            <motion.aside
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "tween", duration: 0.28 }}
-              className="fixed inset-y-0 left-0 z-50 w-80 max-w-[85vw] bg-background p-5 shadow-lift"
-            >
-              <div className="flex items-center justify-between">
-                <Logo />
-                <button
-                  onClick={() => setMobileOpen(false)}
-                  className="grid h-9 w-9 place-items-center rounded-full hover:bg-secondary"
-                  aria-label="Close"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <nav className="mt-6 space-y-1">
-                {[
-                  ["Home", "/"],
-                  ["Shop", "/shop"],
-                  ["About", "/about"],
-                  ["Wishlist", "/wishlist"],
-                  ["Profile", "/profile"],
-                  ["Admin Panel", "/admin"],
-                ].map(([t, h]) => (
-                  <Link
-                    key={h}
-                    to={h}
-                    onClick={() => setMobileOpen(false)}
-                    className="block rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-secondary"
-                  >
-                    {t}
-                  </Link>
-                ))}
-              </nav>
-              <div className="mt-6">
-                <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Categories
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {categories.map((c) => (
-                    <Link
-                      key={c.id}
-                      to="/category/$slug"
-                      params={{ slug: c.slug }}
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2 rounded-xl bg-secondary/60 p-2.5"
-                    >
-                      <span className="text-lg">{c.icon}</span>
-                      <span className="text-sm font-medium">{c.name}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
     </header>
   );
 }
