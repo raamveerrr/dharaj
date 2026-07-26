@@ -75,10 +75,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "DHARAJ — Pure Organic Grocery" },
       {
         property: "og:description",
-        content: "Handmade, natural and pure. Delivered fresh from farm to your kitchen.",
+        content: "Premium organic groceries — desi ghee, pickles, spices, cookies and natural food. 100% pure, handmade with love.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "DHARAJ — Pure Organic Grocery" },
+      { name: "twitter:description", content: "Premium organic groceries — desi ghee, pickles, spices, cookies and natural food. 100% pure, handmade with love." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f11baf80-2467-4021-9f41-4e13e56016b9/id-preview-11597d5d--398218a5-9996-492d-a116-b88ff671fd16.lovable.app-1785049279427.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f11baf80-2467-4021-9f41-4e13e56016b9/id-preview-11597d5d--398218a5-9996-492d-a116-b88ff671fd16.lovable.app-1785049279427.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
