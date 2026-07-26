@@ -3,6 +3,8 @@ import { AnnouncementBar } from "@/components/customer/AnnouncementBar";
 import { Navbar } from "@/components/customer/Navbar";
 import { BottomNav } from "@/components/customer/BottomNav";
 import { Footer } from "@/components/customer/Footer";
+import { MobileDrawer } from "@/components/customer/MobileDrawer";
+import { ClientOnly } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_shop")({
   component: ShopLayout,
@@ -18,6 +20,9 @@ function ShopLayout() {
       </main>
       <Footer />
       <BottomNav />
+      <ClientOnly fallback={null}>
+        <MobileDrawer />
+      </ClientOnly>
     </div>
   );
 }
