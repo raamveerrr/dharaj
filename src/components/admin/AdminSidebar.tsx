@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const items = [
+type NavItem = { to: string; label: string; icon: typeof Home; exact?: boolean };
+const items: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/orders", label: "Orders", icon: ShoppingCart },
@@ -29,7 +30,7 @@ const items = [
   { to: "/admin/inventory", label: "Inventory", icon: Warehouse },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/settings", label: "Settings", icon: Settings },
-] as const;
+];
 
 export function AdminSidebar({
   collapsed,
@@ -66,7 +67,7 @@ export function AdminSidebar({
           return (
             <Link
               key={it.to}
-              to={it.to}
+              to={it.to as any}
               className={cn(
                 "mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
                 active

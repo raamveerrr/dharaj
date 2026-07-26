@@ -4,13 +4,14 @@ import { useCart } from "@/stores/cart";
 import { useWishlist } from "@/stores/wishlist";
 import { cn } from "@/lib/utils";
 
-const items = [
+type Item = { to: string; label: string; icon: typeof Home; badge?: "cart" | "wish" };
+const items: Item[] = [
   { to: "/", label: "Home", icon: Home },
   { to: "/shop", label: "Shop", icon: Grid3x3 },
   { to: "/wishlist", label: "Wishlist", icon: Heart, badge: "wish" },
   { to: "/cart", label: "Cart", icon: ShoppingBag, badge: "cart" },
   { to: "/profile", label: "Profile", icon: User },
-] as const;
+];
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -26,7 +27,7 @@ export function BottomNav() {
           return (
             <li key={it.to}>
               <Link
-                to={it.to}
+                to={it.to as any}
                 className={cn(
                   "relative flex min-w-16 flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[11px] transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
