@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { ProductCard } from "@/components/customer/ProductCard";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
+import { categoryImage } from "@/lib/mockImages";
 import { getCategory, getProductsByCategory } from "@/lib/data";
 
 export const Route = createFileRoute("/_shop/category/$slug")({
@@ -27,7 +28,7 @@ function CategoryPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
       <div className="mb-6 flex items-center gap-4 overflow-hidden rounded-3xl bg-secondary/50 p-4 sm:p-6">
-        <ImagePlaceholder className="h-20 w-20 sm:h-28 sm:w-28 shrink-0" rounded="rounded-2xl" />
+        <ImagePlaceholder src={categoryImage(cat.slug)} alt={cat.name} className="h-20 w-20 sm:h-28 sm:w-28 shrink-0" rounded="rounded-2xl" />
         <div className="min-w-0">
           <div className="text-2xl">{cat.icon}</div>
           <h1 className="truncate text-xl font-extrabold sm:text-3xl">{cat.name}</h1>

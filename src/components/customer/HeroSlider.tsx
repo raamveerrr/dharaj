@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { heroSlides } from "@/lib/data";
+import { heroImage } from "@/lib/mockImages";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
 
 export function HeroSlider() {
@@ -59,9 +60,12 @@ export function HeroSlider() {
             transition={{ duration: 0.5 }}
           >
             <ImagePlaceholder
+              src={heroImage(i)}
+              alt={slide.title}
               label="Hero image"
               className="aspect-[4/3] w-full md:aspect-square"
               rounded="rounded-3xl"
+              loading="eager"
             />
           </motion.div>
         </AnimatePresence>

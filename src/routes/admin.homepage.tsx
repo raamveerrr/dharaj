@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Edit2, Image as ImageIcon, Plus, Trash2 } from "lucide-react";
 import { announcements, heroSlides, shortcuts } from "@/lib/data";
+import { heroImage, shortcutImage } from "@/lib/mockImages";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
 
 export const Route = createFileRoute("/admin/homepage")({
@@ -28,9 +29,9 @@ function AdminHomepage() {
 
       <Panel title="Hero Slider">
         <div className="grid gap-3 sm:grid-cols-3">
-          {heroSlides.map((s) => (
+          {heroSlides.map((s, i) => (
             <div key={s.id} className="rounded-2xl border border-border bg-card p-3 shadow-card">
-              <ImagePlaceholder className="aspect-video w-full" rounded="rounded-xl" />
+              <ImagePlaceholder src={heroImage(i)} alt={s.title} className="aspect-video w-full" rounded="rounded-xl" />
               <div className="mt-2 text-xs font-semibold uppercase text-primary">{s.eyebrow}</div>
               <div className="text-sm font-bold">{s.title}</div>
               <div className="text-xs text-muted-foreground">{s.subtitle}</div>
@@ -48,7 +49,7 @@ function AdminHomepage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {shortcuts.map((s) => (
             <div key={s.id} className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-3 shadow-card">
-              <ImagePlaceholder className="aspect-square w-16" rounded="rounded-full" />
+              <ImagePlaceholder src={shortcutImage(s.label)} alt={s.label} className="aspect-square w-16" rounded="rounded-full" />
               <div className="text-xs font-semibold">{s.label}</div>
               <div className="flex gap-1">
                 <IconBtn icon={Edit2} />
