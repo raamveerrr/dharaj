@@ -157,7 +157,7 @@ function ProductPage() {
       </div>
 
       {/* Tabs */}
-      <div className="mt-12 grid gap-6 lg:grid-cols-3">
+      <div className="mt-12 grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-border bg-card p-5">
           <h3 className="text-sm font-bold uppercase tracking-widest text-primary">Description</h3>
           <p className="mt-3 text-sm text-muted-foreground">{product.description}</p>
@@ -179,25 +179,9 @@ function ProductPage() {
             ))}
           </dl>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-primary">Reviews</h3>
-          <div className="mt-3 space-y-3">
-            {reviews.map((r) => (
-              <div key={r.id} className="rounded-xl bg-secondary/50 p-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-semibold">{r.user}</span>
-                  <span className="flex items-center gap-0.5 text-turmeric">
-                    {Array.from({ length: r.rating }).map((_, i) => (
-                      <Star key={i} className="h-3 w-3 fill-current" />
-                    ))}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">{r.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
+
+      <ProductReviews productName={product.name} />
 
       {/* Related */}
       <div className="mt-12">
