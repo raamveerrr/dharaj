@@ -7,12 +7,14 @@ import { inr, pct } from "@/lib/format";
 import { useWishlist } from "@/stores/wishlist";
 import { useCart } from "@/stores/cart";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
+import { productImages } from "@/lib/mockImages";
 
 export function ProductCard({ product }: { product: Product }) {
   const wished = useWishlist((s) => s.has(product.id));
   const toggle = useWishlist((s) => s.toggle);
   const add = useCart((s) => s.add);
   const discount = pct(product.mrp, product.price);
+  const cover = productImages(product.id, product.category, 1, 500)[0];
 
   return (
     <motion.div
@@ -22,7 +24,7 @@ export function ProductCard({ product }: { product: Product }) {
     >
       <Link to="/product/$id" params={{ id: product.id }} className="block">
         <div className="relative">
-          <ImagePlaceholder className="aspect-square w-full" rounded="rounded-none" />
+          <ImagePlaceholder src={cover} alt={product.name} className="aspect-square w-full" rounded="rounded-none" />
           {discount > 0 && (
             <span className="absolute left-3 top-3 rounded-full bg-sale px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">
               {discount}% off
