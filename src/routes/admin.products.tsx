@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Edit2, Plus, Search, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Edit2, Plus, Search, Trash2, ChevronDown, ChevronUp, Images } from "lucide-react";
 import { products } from "@/lib/data";
+import { productImages } from "@/lib/mockImages";
 import { inr } from "@/lib/format";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
+import { ProductImageUploader } from "@/components/admin/ProductImageUploader";
 import { DataTable } from "@/components/admin/DataTable";
 
 export const Route = createFileRoute("/admin/products")({
@@ -11,6 +14,8 @@ export const Route = createFileRoute("/admin/products")({
 });
 
 function AdminProducts() {
+  const [showAdd, setShowAdd] = useState(false);
+  const [editingImages, setEditingImages] = useState<string | null>(null);
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
