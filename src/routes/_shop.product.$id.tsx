@@ -1,11 +1,13 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Heart, Minus, Plus, ShieldCheck, Star, Truck, Leaf } from "lucide-react";
 import { motion } from "framer-motion";
-import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
+import { ProductGallery } from "@/components/customer/ProductGallery";
+import { ProductReviews } from "@/components/customer/ProductReviews";
 import { ProductCard } from "@/components/customer/ProductCard";
-import { getProduct, products, reviews } from "@/lib/data";
+import { getProduct, products } from "@/lib/data";
+import { productImages } from "@/lib/mockImages";
 import { inr, pct } from "@/lib/format";
 import { useCart } from "@/stores/cart";
 import { useWishlist } from "@/stores/wishlist";
@@ -31,44 +33,34 @@ export const Route = createFileRoute("/_shop/product/$id")({
 
 function ProductPage() {
   const { product } = Route.useLoaderData();
-  const [imgIndex, setImgIndex] = useState(0);
   const [qty, setQty] = useState(1);
   const add = useCart((s) => s.add);
   const wished = useWishlist((s) => s.has(product.id));
   const toggle = useWishlist((s) => s.toggle);
   const discount = pct(product.mrp, product.price);
   const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+  const gallery = useMemo(
+    () => productImages(product.id, product.category, Math.min(product.images, 5), 1000),
+    [product.id, product.category, product.images],
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Gallery */}
         <div>
-          <div className="relative">
-            <ImagePlaceholder
-              className="aspect-square w-full"
-              label={`Image ${imgIndex + 1}`}
-              rounded="rounded-3xl"
-            />
-            {discount > 0 && (
-              <span className="absolute left-4 top-4 rounded-full bg-sale px-2.5 py-1 text-xs font-bold text-primary-foreground">
-                {discount}% off
-              </span>
-            )}
-          </div>
-          <div className="mt-3 flex gap-2 overflow-x-auto">
-            {Array.from({ length: product.images }).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setImgIndex(i)}
-                className={`shrink-0 rounded-xl border-2 transition ${
-                  i === imgIndex ? "border-primary" : "border-transparent"
-                }`}
-              >
-                <ImagePlaceholder className="h-16 w-16 sm:h-20 sm:w-20" rounded="rounded-lg" />
-              </button>
-            ))}
-          </div>
+          <ProductGallery
+            productId={product.id}
+            images={gallery}
+            alt={product.name}
+            badge={
+              discount > 0 ? (
+                <span className="absolute left-4 top-4 z-10 rounded-full bg-sale px-2.5 py-1 text-xs font-bold text-primary-foreground shadow-soft">
+                  {discount}% off
+                </span>
+              ) : null
+            }
+          />
         </div>
 
         {/* Info */}
