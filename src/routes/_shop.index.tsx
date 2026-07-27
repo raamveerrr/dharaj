@@ -5,6 +5,7 @@ import { HeroSlider } from "@/components/customer/HeroSlider";
 import { ShortcutCircle } from "@/components/customer/ShortcutCircle";
 import { ProductCard } from "@/components/customer/ProductCard";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
+import { categoryImage } from "@/lib/mockImages";
 import { categories, products, shortcuts } from "@/lib/data";
 
 export const Route = createFileRoute("/_shop/")({
@@ -84,7 +85,7 @@ function Home() {
                 params={{ slug: c.slug }}
                 className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card hover:shadow-lift"
               >
-                <ImagePlaceholder className="aspect-[4/3] w-full" rounded="rounded-none" />
+                <ImagePlaceholder src={categoryImage(c.slug)} alt={c.name} className="aspect-[4/3] w-full" rounded="rounded-none" />
                 <div className="p-3">
                   <div className="text-sm font-bold">{c.name}</div>
                   <div className="text-xs text-muted-foreground">{c.tagline}</div>
