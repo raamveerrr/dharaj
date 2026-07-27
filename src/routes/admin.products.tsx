@@ -131,8 +131,15 @@ function AdminProducts() {
             key: "actions",
             label: "",
             className: "text-right",
-            render: () => (
+            render: (p) => (
               <div className="flex justify-end gap-1">
+                <button
+                  onClick={() => setEditingImages(p.id)}
+                  title="Manage images"
+                  className="grid h-8 w-8 place-items-center rounded-full hover:bg-secondary"
+                >
+                  <Images className="h-4 w-4" />
+                </button>
                 <button className="grid h-8 w-8 place-items-center rounded-full hover:bg-secondary">
                   <Edit2 className="h-4 w-4" />
                 </button>
@@ -151,4 +158,18 @@ function AdminProducts() {
 
 function Tag({ children, c }: { children: React.ReactNode; c: string }) {
   return <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${c}`}>{children}</span>;
+}
+
+function Field({ label, placeholder }: { label: string; placeholder?: string }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+        {label}
+      </span>
+      <input
+        placeholder={placeholder}
+        className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+      />
+    </label>
+  );
 }
