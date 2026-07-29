@@ -1,9 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, ClientOnly } from "@tanstack/react-router";
 import { Bell, MapPin, Package, Settings, User, LogOut, Heart } from "lucide-react";
 import { orders } from "@/lib/data";
 import { inr } from "@/lib/format";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/stores/auth";
+import { AuthInit } from "@/components/auth/AuthInit";
 
 export const Route = createFileRoute("/_shop/profile")({
   head: () => ({
@@ -14,7 +16,12 @@ export const Route = createFileRoute("/_shop/profile")({
       { property: "og:description", content: "Orders, addresses and settings." },
     ],
   }),
-  component: ProfilePage,
+  component: () => (
+    <ClientOnly fallback={null}>
+      <AuthInit />
+      <ProfilePage />
+    </ClientOnly>
+  ),
 });
 
 const tabs = [
@@ -27,6 +34,9 @@ const tabs = [
 
 function ProfilePage() {
   const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("orders");
+  const { user, profile, logout } = useAuth();
+  const navigate = useNavigate();
+  const displayName = profile?.displayName ?? user?.displayName ?? user?.email?.split("@")[0] ?? "Guest";
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
       <div className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-card">
@@ -34,12 +44,23 @@ function ProfilePage() {
           <User className="h-6 w-6" />
         </div>
         <div className="min-w-0">
-          <h1 className="truncate text-lg font-extrabold sm:text-xl">Hi, Guest</h1>
-          <p className="text-xs text-muted-foreground">Sign in to track your orders</p>
+          <h1 className="truncate text-lg font-extrabold sm:text-xl">Hi, {displayName}</h1>
+          <p className="text-xs text-muted-foreground">
+            {user ? user.email : "Sign in to track your orders"}
+          </p>
         </div>
-        <button className="ml-auto rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">
-          Sign In
-        </button>
+        {user ? (
+          <button
+            onClick={() => logout().then(() => navigate({ to: "/auth/login" }))}
+            className="ml-auto flex items-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-xs font-bold hover:bg-secondary"
+          >
+            <LogOut className="h-3.5 w-3.5" /> Sign out
+          </button>
+        ) : (
+          <Link to="/auth/login" className="ml-auto rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">
+            Sign In
+          </Link>
+        )}
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[240px_1fr]">
