@@ -12,6 +12,7 @@ import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { SplashGate } from "@/components/common/Splash";
 
 function NotFoundComponent() {
   return (
@@ -119,7 +120,9 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <SplashGate>
+        <Outlet />
+      </SplashGate>
       <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
   );
