@@ -85,6 +85,14 @@ function LoginPage() {
         <AuthButton type="submit" loading={loading}>
           Sign in
         </AuthButton>
+        <div className="mt-4 text-center">
+          <Link
+            to="/admin/login"
+            className="text-xs text-muted-foreground hover:text-primary hover:underline"
+          >
+            Are you an administrator?
+          </Link>
+        </div>
       </form>
     </AuthShell>
   );

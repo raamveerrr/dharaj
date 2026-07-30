@@ -168,7 +168,6 @@ export function MobileDrawer() {
               </Accordion>
 
               <SimpleLink to="/profile" onClose={close} label="Profile" />
-              <SimpleLink to="/admin" onClose={close} label="Admin Panel" />
             </div>
 
             <div className="border-t border-border px-5 py-3 text-center text-xs text-muted-foreground">

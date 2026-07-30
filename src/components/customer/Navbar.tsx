@@ -94,15 +94,6 @@ export function Navbar() {
           <div className="hidden flex-1 lg:block">
             <SearchBar />
           </div>
-          {/* Desktop-only quick admin link */}
-          <div className="hidden lg:block">
-            <Link
-              to="/admin"
-              className="rounded-full border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              Admin Panel
-            </Link>
-          </div>
         </div>
 
         {/* Mobile search */}

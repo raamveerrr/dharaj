@@ -12,12 +12,15 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 
+export type UserRole = "customer" | "admin";
+
 export interface UserProfile {
   uid: string;
   email: string | null;
   displayName: string | null;
   phone: string | null;
   avatarUrl: string | null;
+  role: UserRole;
   isAdmin: boolean;
   createdAt?: unknown;
 }
@@ -47,13 +50,15 @@ async function loadProfile(user: User): Promise<UserProfile> {
   const snap = await getDoc(ref);
   if (snap.exists()) {
     const data = snap.data() as Partial<UserProfile>;
+    const role: UserRole = data.role === "admin" || data.isAdmin === true ? "admin" : "customer";
     return {
       uid: user.uid,
       email: user.email,
       displayName: data.displayName ?? user.displayName ?? null,
       phone: data.phone ?? null,
       avatarUrl: data.avatarUrl ?? null,
-      isAdmin: Boolean(data.isAdmin),
+      role,
+      isAdmin: role === "admin",
     };
   }
   // Auto-create profile if missing (e.g. legacy accounts).
@@ -63,6 +68,7 @@ async function loadProfile(user: User): Promise<UserProfile> {
     displayName: user.displayName,
     phone: null,
     avatarUrl: null,
+    role: "customer",
     isAdmin: false,
   };
   await setDoc(ref, { ...fresh, createdAt: serverTimestamp() });
@@ -107,6 +113,7 @@ export const useAuth = create<AuthState>((set, get) => ({
       displayName,
       phone: phone ?? null,
       avatarUrl: null,
+      role: "customer",
       isAdmin: false,
     };
     await setDoc(doc(db, "users", cred.user.uid), { ...profile, createdAt: serverTimestamp() });
