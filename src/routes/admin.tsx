@@ -44,8 +44,19 @@ function AdminGate() {
 
   useEffect(() => {
     if (loading || isLoginRoute) return;
-    if (!user) navigate({ to: "/admin/login", replace: true });
-  }, [loading, user, isLoginRoute, navigate]);
+    if (!user) {
+      navigate({ to: "/admin/login", replace: true });
+      return;
+    }
+    if (profile && profile.role !== "admin") {
+      toast.error("Access Denied", {
+        description: "This area is restricted to administrators.",
+      });
+      const t = setTimeout(() => navigate({ to: "/profile", replace: true }), 1800);
+      return () => clearTimeout(t);
+    }
+  }, [loading, user, profile, isLoginRoute, navigate]);
+
 
   // The admin login screen renders itself, outside the gate.
   if (isLoginRoute) return <Outlet />;
