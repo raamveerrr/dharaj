@@ -31,7 +31,7 @@ export function Footer() {
           {[
             { t: "Shop", l: [["All Products", "/shop"], ["Ghee", "/category/ghee"], ["Pickles", "/category/pickles"], ["Spices", "/category/spices"]] },
             { t: "Customers", l: [["Track Order", "/profile"], ["Contact Us", "/about"], ["Return Policy", "/about"], ["Shipping", "/about"]] },
-            { t: "Company", l: [["About Us", "/about"], ["Our Story", "/about"], ["Sustainability", "/about"], ["Admin", "/admin"]] },
+            { t: "Company", l: [["About Us", "/about"], ["Our Story", "/about"], ["Sustainability", "/about"], ["Contact", "/about"]] },
           ].map((col) => (
             <div key={col.t}>
               <div className="text-sm font-semibold">{col.t}</div>
