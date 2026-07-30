@@ -1,23 +1,21 @@
-import { Outlet, createFileRoute, useRouterState, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { Outlet, createFileRoute, useRouterState, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Leaf, ShieldAlert, LogOut } from "lucide-react";
 import { ClientOnly } from "@tanstack/react-router";
-import { toast } from "sonner";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminTopbar } from "@/components/admin/AdminTopbar";
 import { AuthInit } from "@/components/auth/AuthInit";
-import { AuthShell, AuthField, AuthButton } from "@/components/auth/AuthShell";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { LoadingScreen } from "@/components/auth/LoadingScreen";
 import { useAuth } from "@/stores/auth";
-import { firebaseAuthErrorMessage } from "@/lib/firebase";
 
 export const Route = createFileRoute("/admin")({
   component: AdminRoute,
 });
 
 const titles: Record<string, string> = {
-  "/admin": "Dashboard",
+  "/admin/dashboard": "Dashboard",
   "/admin/products": "Products",
   "/admin/orders": "Orders",
   "/admin/customers": "Customers",
@@ -40,67 +38,21 @@ function AdminRoute() {
 
 function AdminGate() {
   const { user, profile, loading } = useAuth();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const isLoginRoute = pathname === "/admin/login";
+
+  useEffect(() => {
+    if (loading || isLoginRoute) return;
+    if (!user) navigate({ to: "/admin/login", replace: true });
+  }, [loading, user, isLoginRoute, navigate]);
+
+  // The admin login screen renders itself, outside the gate.
+  if (isLoginRoute) return <Outlet />;
   if (loading) return <LoadingScreen label="Loading admin…" />;
-  if (!user) return <AdminLoginScreen />;
-  if (!profile?.isAdmin) return <NotAuthorizedScreen />;
+  if (!user) return <LoadingScreen label="Redirecting…" />;
+  if (profile?.role !== "admin") return <NotAuthorizedScreen />;
   return <AdminLayout />;
-}
-
-function AdminLoginScreen() {
-  const login = useAuth((s) => s.login);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const user = await login(email.trim(), password);
-      // Profile loads; if not admin, the gate re-renders to NotAuthorized.
-      toast.success(`Signed in as ${user.email}`);
-    } catch (err) {
-      toast.error(firebaseAuthErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <AuthShell
-      title="Admin Sign In"
-      subtitle="Restricted area — authorized staff only."
-      footer={
-        <Link to="/" className="font-semibold text-primary hover:underline">
-          Back to store
-        </Link>
-      }
-    >
-      <form onSubmit={onSubmit}>
-        <AuthField
-          id="admin-email"
-          label="Admin email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <AuthField
-          id="admin-password"
-          label="Password"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <AuthButton type="submit" loading={loading}>
-          Sign in to dashboard
-        </AuthButton>
-      </form>
-    </AuthShell>
-  );
 }
 
 function NotAuthorizedScreen() {
@@ -108,8 +60,8 @@ function NotAuthorizedScreen() {
   const user = useAuth((s) => s.user);
   return (
     <AuthShell
-      title="Access denied"
-      subtitle={user?.email ? `${user.email} is not an admin.` : "You don't have admin privileges."}
+      title="Access Denied"
+      subtitle={user?.email ? `${user.email} is not an admin.` : "Unauthorized access."}
       footer={
         <Link to="/" className="font-semibold text-primary hover:underline">
           Back to store
@@ -122,14 +74,22 @@ function NotAuthorizedScreen() {
         </div>
       </div>
       <p className="mb-5 text-center text-sm text-muted-foreground">
-        This dashboard is restricted to administrators. If you believe this is an error, contact the store owner.
+        Unauthorized access. This dashboard is restricted to administrators.
       </p>
-      <button
-        onClick={() => logout()}
-        className="flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold hover:bg-secondary"
-      >
-        <LogOut className="h-4 w-4" /> Sign out
-      </button>
+      <div className="space-y-3">
+        <Link
+          to="/profile"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
+        >
+          Go to my profile
+        </Link>
+        <button
+          onClick={() => logout()}
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold hover:bg-secondary"
+        >
+          <LogOut className="h-4 w-4" /> Sign out
+        </button>
+      </div>
     </AuthShell>
   );
 }
