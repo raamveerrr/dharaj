@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { heroSlides } from "@/lib/data";
-import { heroImage } from "@/lib/mockImages";
+import { useHomepageContent } from "@/hooks/useHomepageContent";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
 
 export function HeroSlider() {
+  const { banners: heroSlides } = useHomepageContent();
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
   const n = heroSlides.length;
@@ -17,7 +17,8 @@ export function HeroSlider() {
     return () => clearInterval(t);
   }, [paused, n]);
 
-  const slide = heroSlides[i];
+  const slide = heroSlides[i % Math.max(heroSlides.length, 1)];
+  if (!slide) return null;
 
   return (
     <section
