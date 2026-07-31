@@ -1,37 +1,62 @@
-import { useState } from "react";
-import { Upload, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Upload, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
+import { uploadImage } from "@/lib/storage";
 
 interface Props {
+  /** Controlled list of image URLs. */
+  value?: (string | null)[];
   initial?: (string | null)[];
   max?: number;
+  folder?: string;
   onChange?: (images: (string | null)[]) => void;
 }
 
-// Frontend-only image upload slots. Uses object URLs for preview so the
-// architecture already accepts real File uploads; wire to storage later.
-export function ProductImageUploader({ initial, max = 5, onChange }: Props) {
+/**
+ * Image slots backed by Firebase Storage. Picking a file uploads it and hands
+ * the public download URL back through onChange.
+ */
+export function ProductImageUploader({
+  value,
+  initial,
+  max = 5,
+  folder = "products",
+  onChange,
+}: Props) {
   const [images, setImages] = useState<(string | null)[]>(
-    () => initial ?? Array.from({ length: max }, () => null),
+    () => value ?? initial ?? Array.from({ length: max }, () => null),
   );
+  const [busy, setBusy] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (value) setImages(pad(value, max));
+  }, [value, max]);
 
   const update = (next: (string | null)[]) => {
     setImages(next);
     onChange?.(next);
   };
 
-  const handleFile = (i: number, file: File | undefined) => {
+  const handleFile = async (i: number, file: File | undefined) => {
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    const next = [...images];
-    next[i] = url;
-    update(next);
+    setBusy(i);
+    try {
+      const url = await uploadImage(file, folder);
+      const next = [...images];
+      next[i] = url;
+      update(next);
+      toast.success("Image uploaded");
+    } catch (err) {
+      toast.error((err as Error)?.message ?? "Upload failed");
+    } finally {
+      setBusy(null);
+    }
   };
 
   const clear = (i: number) => {
     const next = [...images];
-    if (next[i]?.startsWith("blob:")) URL.revokeObjectURL(next[i]!);
     next[i] = null;
     update(next);
   };
@@ -39,7 +64,7 @@ export function ProductImageUploader({ initial, max = 5, onChange }: Props) {
   return (
     <div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-        {images.map((src, i) => (
+        {pad(images, max).map((src, i) => (
           <div key={i} className="relative">
             <label
               className={cn(
@@ -47,7 +72,9 @@ export function ProductImageUploader({ initial, max = 5, onChange }: Props) {
                 src && "border-solid border-border",
               )}
             >
-              {src ? (
+              {busy === i ? (
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              ) : src ? (
                 <ImagePlaceholder src={src} className="h-full w-full" rounded="rounded-2xl" />
               ) : (
                 <div className="flex flex-col items-center gap-1 text-muted-foreground">
@@ -61,10 +88,11 @@ export function ProductImageUploader({ initial, max = 5, onChange }: Props) {
                 type="file"
                 accept="image/*"
                 className="hidden"
+                disabled={busy !== null}
                 onChange={(e) => handleFile(i, e.target.files?.[0])}
               />
             </label>
-            {src && (
+            {src && busy !== i && (
               <button
                 type="button"
                 onClick={() => clear(i)}
@@ -87,4 +115,10 @@ export function ProductImageUploader({ initial, max = 5, onChange }: Props) {
       </p>
     </div>
   );
+}
+
+function pad(list: (string | null)[], max: number) {
+  const next = [...list].slice(0, max);
+  while (next.length < max) next.push(null);
+  return next;
 }

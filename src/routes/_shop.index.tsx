@@ -6,7 +6,8 @@ import { ShortcutCircle } from "@/components/customer/ShortcutCircle";
 import { ProductCard } from "@/components/customer/ProductCard";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
 import { categoryImage } from "@/lib/mockImages";
-import { categories, products, shortcuts } from "@/lib/data";
+import { categories, products } from "@/lib/data";
+import { useHomepageContent } from "@/hooks/useHomepageContent";
 
 export const Route = createFileRoute("/_shop/")({
   head: () => ({
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/_shop/")({
 });
 
 function Home() {
+  const { shortcuts } = useHomepageContent();
   const bestSellers = products.filter((p) => p.bestSeller);
   const newArrivals = products.filter((p) => p.newArrival);
   return (
@@ -39,7 +41,7 @@ function Home() {
         <div className="hide-scrollbar -mx-4 flex snap-x snap-mandatory items-start gap-4 overflow-x-auto px-4 sm:justify-center sm:gap-6">
           {shortcuts.map((s) => (
             <div key={s.id} className="snap-start shrink-0">
-              <ShortcutCircle label={s.label} href={s.href} />
+              <ShortcutCircle label={s.label} href={s.href} imageUrl={s.imageUrl} />
             </div>
           ))}
         </div>

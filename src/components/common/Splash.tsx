@@ -126,10 +126,13 @@ export function Splash({ onDone }: { onDone: () => void }) {
 }
 
 export function useSplash() {
-  const [show, setShow] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return !sessionStorage.getItem(SPLASH_KEY);
-  });
+  // Always start hidden so the server and the first client render match;
+  // decide whether to show the splash after hydration.
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (!sessionStorage.getItem(SPLASH_KEY)) setShow(true);
+  }, []);
 
   const dismiss = () => {
     sessionStorage.setItem(SPLASH_KEY, "1");

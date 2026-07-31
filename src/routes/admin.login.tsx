@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ClientOnly } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
 import { AuthShell, AuthField, AuthButton } from "@/components/auth/AuthShell";
 import { AuthInit } from "@/components/auth/AuthInit";
 import { LoadingScreen } from "@/components/auth/LoadingScreen";
@@ -66,8 +67,8 @@ function AdminLoginPage() {
       title="Admin Sign In"
       subtitle="Restricted area — authorized staff only."
       footer={
-        <Link to="/" className="font-semibold text-primary hover:underline">
-          Back to store
+        <Link to="/auth/login" className="font-semibold text-primary hover:underline">
+          Customer login
         </Link>
       }
     >
@@ -93,6 +94,12 @@ function AdminLoginPage() {
         <AuthButton type="submit" loading={loading}>
           Sign in to dashboard
         </AuthButton>
+        <Link
+          to="/auth/login"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold hover:bg-secondary"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to login page
+        </Link>
       </form>
     </AuthShell>
   );
