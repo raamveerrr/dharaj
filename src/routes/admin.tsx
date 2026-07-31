@@ -42,9 +42,12 @@ function AdminGate() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const isLoginRoute = pathname === "/admin/login";
+  // While navigating away from /admin/* this component can still be mounted for
+  // one render — never redirect back into the admin area in that case.
+  const inAdminArea = pathname.startsWith("/admin");
 
   useEffect(() => {
-    if (loading || isLoginRoute) return;
+    if (loading || isLoginRoute || !inAdminArea) return;
     if (!user) {
       navigate({ to: "/admin/login", replace: true });
       return;
@@ -56,7 +59,7 @@ function AdminGate() {
       const t = setTimeout(() => navigate({ to: "/profile", replace: true }), 1800);
       return () => clearTimeout(t);
     }
-  }, [loading, user, profile, isLoginRoute, navigate]);
+  }, [loading, user, profile, isLoginRoute, inAdminArea, navigate]);
 
 
   // The admin login screen renders itself, outside the gate.
