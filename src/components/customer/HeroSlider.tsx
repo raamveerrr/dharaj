@@ -61,7 +61,7 @@ export function HeroSlider() {
             transition={{ duration: 0.5 }}
           >
             <ImagePlaceholder
-              src={heroImage(i)}
+              src={slide.imageUrl}
               alt={slide.title}
               label="Hero image"
               className="aspect-[4/3] w-full md:aspect-square"
