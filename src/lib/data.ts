@@ -119,6 +119,13 @@ export const heroSlides: HeroSlide[] = [
   },
 ];
 
+/** Small stable string hash — keeps mock numbers identical on server & client. */
+function hashSeed(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
 const P = (
   id: string,
   name: string,
