@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ClientOnly } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
 import { AuthShell, AuthField, AuthButton } from "@/components/auth/AuthShell";
 import { AuthInit } from "@/components/auth/AuthInit";
 import { LoadingScreen } from "@/components/auth/LoadingScreen";
