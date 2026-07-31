@@ -138,8 +138,9 @@ const P = (
   mrp,
   stock: 24,
   sku: `DHR-${id.toUpperCase()}`,
-  rating: 4.5 + Math.random() * 0.4,
-  reviewsCount: 40 + Math.floor(Math.random() * 200),
+  // Deterministic (seeded by id) so server and client render identically.
+  rating: Math.round((4.5 + (hashSeed(id) % 40) / 100) * 10) / 10,
+  reviewsCount: 40 + (hashSeed(id + "r") % 200),
   tags: [category],
   images: 5,
   description:
