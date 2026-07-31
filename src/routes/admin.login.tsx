@@ -66,8 +66,8 @@ function AdminLoginPage() {
       title="Admin Sign In"
       subtitle="Restricted area — authorized staff only."
       footer={
-        <Link to="/" className="font-semibold text-primary hover:underline">
-          Back to store
+        <Link to="/auth/login" className="font-semibold text-primary hover:underline">
+          Customer login
         </Link>
       }
     >
