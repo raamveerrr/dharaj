@@ -29,6 +29,7 @@ export const Route = createFileRoute("/_shop/")({
 });
 
 function Home() {
+  const { shortcuts } = useHomepageContent();
   const bestSellers = products.filter((p) => p.bestSeller);
   const newArrivals = products.filter((p) => p.newArrival);
   return (
