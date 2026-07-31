@@ -75,8 +75,8 @@ function NotAuthorizedScreen() {
       title="Access Denied"
       subtitle={user?.email ? `${user.email} is not an admin.` : "Unauthorized access."}
       footer={
-        <Link to="/" className="font-semibold text-primary hover:underline">
-          Back to store
+        <Link to="/auth/login" className="font-semibold text-primary hover:underline">
+          Back to login page
         </Link>
       }
     >
@@ -90,8 +90,14 @@ function NotAuthorizedScreen() {
       </p>
       <div className="space-y-3">
         <Link
-          to="/profile"
+          to="/auth/login"
           className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
+        >
+          Back to login page
+        </Link>
+        <Link
+          to="/profile"
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold hover:bg-secondary"
         >
           Go to my profile
         </Link>
