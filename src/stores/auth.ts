@@ -5,6 +5,7 @@ import {
   createUserWithEmailAndPassword,
   signOut as fbSignOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
@@ -38,6 +39,7 @@ interface AuthState {
   loginWithGoogle: () => Promise<User>;
   logout: () => Promise<void>;
   sendReset: (email: string) => Promise<void>;
+  resendVerification: () => Promise<void>;
   updateProfileFields: (fields: Partial<Pick<UserProfile, "displayName" | "phone" | "avatarUrl">>) => Promise<void>;
   markSessionExpired: () => void;
   clearSessionExpired: () => void;
@@ -149,6 +151,17 @@ export const useAuth = create<AuthState>((set, get) => ({
     const auth = getFirebaseAuth();
     await sendPasswordResetEmail(auth, email, {
       url: typeof window !== "undefined" ? `${window.location.origin}/auth/login` : "https://dharaj.lovable.app/auth/login",
+    });
+  },
+
+  resendVerification: async () => {
+    const auth = getFirebaseAuth();
+    if (!auth.currentUser) throw new Error("You are not signed in.");
+    await sendEmailVerification(auth.currentUser, {
+      url:
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/login`
+          : "https://dharaj.lovable.app/auth/login",
     });
   },
 
