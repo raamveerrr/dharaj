@@ -4,9 +4,10 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as fbSignOut,
-  sendEmailVerification,
   sendPasswordResetEmail,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
   type User,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -34,8 +35,8 @@ interface AuthState {
   init: () => void;
   register: (email: string, password: string, displayName: string, phone?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<User>;
+  loginWithGoogle: () => Promise<User>;
   logout: () => Promise<void>;
-  resendVerification: () => Promise<void>;
   sendReset: (email: string) => Promise<void>;
   updateProfileFields: (fields: Partial<Pick<UserProfile, "displayName" | "phone" | "avatarUrl">>) => Promise<void>;
   markSessionExpired: () => void;
@@ -117,12 +118,7 @@ export const useAuth = create<AuthState>((set, get) => ({
       isAdmin: false,
     };
     await setDoc(doc(db, "users", cred.user.uid), { ...profile, createdAt: serverTimestamp() });
-    try {
-      await sendEmailVerification(cred.user);
-    } catch {
-      /* non-fatal */
-    }
-    set({ user: cred.user, profile });
+    set({ user: cred.user, profile, sessionExpired: false });
   },
 
   login: async (email, password) => {
@@ -133,15 +129,20 @@ export const useAuth = create<AuthState>((set, get) => ({
     return cred.user;
   },
 
+  loginWithGoogle: async () => {
+    const auth = getFirebaseAuth();
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    const cred = await signInWithPopup(auth, provider);
+    const profile = await loadProfile(cred.user);
+    set({ user: cred.user, profile, sessionExpired: false });
+    return cred.user;
+  },
+
   logout: async () => {
     const auth = getFirebaseAuth();
     await fbSignOut(auth);
     set({ user: null, profile: null });
-  },
-
-  resendVerification: async () => {
-    const auth = getFirebaseAuth();
-    if (auth.currentUser) await sendEmailVerification(auth.currentUser);
   },
 
   sendReset: async (email) => {

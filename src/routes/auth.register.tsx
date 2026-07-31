@@ -33,8 +33,8 @@ function RegisterPage() {
     setLoading(true);
     try {
       await register(email.trim(), password, name.trim(), phone.trim() || undefined);
-      toast.success("Account created! Please verify your email.");
-      navigate({ to: "/auth/verify-email" });
+      toast.success("Account created! You can sign in now.");
+      navigate({ to: "/" });
     } catch (err) {
       toast.error(firebaseAuthErrorMessage(err));
     } finally {

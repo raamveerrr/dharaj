@@ -59,6 +59,10 @@ export function firebaseAuthErrorMessage(err: unknown): string {
       return "Password must be at least 6 characters.";
     case "auth/too-many-requests":
       return "Too many attempts. Please try again in a few minutes.";
+    case "auth/popup-closed-by-user":
+    case "auth/cancelled-popup-request":
+    case "auth/popup-blocked":
+      return "Google sign-in was cancelled or blocked. Please try again.";
     case "auth/network-request-failed":
       return "Network error. Check your connection and try again.";
     case "auth/requires-recent-login":
