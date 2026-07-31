@@ -93,6 +93,12 @@ function AdminLoginPage() {
         <AuthButton type="submit" loading={loading}>
           Sign in to dashboard
         </AuthButton>
+        <Link
+          to="/auth/login"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold hover:bg-secondary"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to login page
+        </Link>
       </form>
     </AuthShell>
   );
