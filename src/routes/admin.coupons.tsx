@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Plus, Edit2, Trash2 } from "lucide-react";
-import { coupons } from "@/lib/data";
 import { DataTable } from "@/components/admin/DataTable";
+import { CouponService } from "@/services/couponService";
+import type { Coupon } from "@/types/coupon";
 
 export const Route = createFileRoute("/admin/coupons")({
   head: () => ({ meta: [{ title: "Coupons — Admin" }, { name: "robots", content: "noindex" }] }),
@@ -9,6 +11,27 @@ export const Route = createFileRoute("/admin/coupons")({
 });
 
 function AdminCoupons() {
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    const load = async () => {
+      try {
+        const data = await CouponService.listCoupons();
+        if (active) setCoupons(data);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -16,6 +39,11 @@ function AdminCoupons() {
           <Plus className="h-4 w-4" /> New Coupon
         </button>
       </div>
+      {loading ? (
+        <div className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+          Loading coupons...
+        </div>
+      ) : (
       <DataTable
         columns={[
           { key: "code", label: "Code", render: (c) => <span className="font-mono font-bold">{c.code}</span> },
@@ -58,6 +86,7 @@ function AdminCoupons() {
         ]}
         rows={coupons}
       />
+      )}
     </div>
   );
 }

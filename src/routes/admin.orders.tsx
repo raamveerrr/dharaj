@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { orders, type Order } from "@/lib/data";
+import { useEffect, useState } from "react";
 import { inr } from "@/lib/format";
 import { DataTable } from "@/components/admin/DataTable";
 import { cn } from "@/lib/utils";
+import { OrderService } from "@/services/orderService";
+import type { Order } from "@/types/order";
 
 const statuses: Order["status"][] = ["Pending", "Confirmed", "Packed", "Shipped", "Delivered", "Cancelled", "Returned"];
 
@@ -24,6 +25,27 @@ export const Route = createFileRoute("/admin/orders")({
 
 function AdminOrders() {
   const [filter, setFilter] = useState<Order["status"] | "All">("All");
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    const load = async () => {
+      try {
+        const data = await OrderService.listOrders();
+        if (active) setOrders(data);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const list = filter === "All" ? orders : orders.filter((o) => o.status === filter);
   return (
     <div className="space-y-4">
@@ -43,6 +65,11 @@ function AdminOrders() {
           </button>
         ))}
       </div>
+      {loading ? (
+        <div className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+          Loading orders...
+        </div>
+      ) : (
       <DataTable
         columns={[
           { key: "id", label: "Order", render: (o) => <span className="font-semibold">{o.id}</span> },
@@ -62,6 +89,7 @@ function AdminOrders() {
         ]}
         rows={list}
       />
+      )}
     </div>
   );
 }
