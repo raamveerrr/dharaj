@@ -186,7 +186,7 @@ function ProductPage() {
         </div>
       </div>
 
-      <ProductReviews productName={product.name} />
+      <ProductReviews productId={product.id} productName={product.name} />
 
       {/* Related */}
       <div className="mt-12">
