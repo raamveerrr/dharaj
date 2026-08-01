@@ -1,377 +1,661 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Edit2, Plus, Search, Trash2, Loader2, Database } from "lucide-react";
-import { toast } from "sonner";
+import { Component, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { Edit2, Plus, Search, Trash2, ChevronDown, ChevronUp, Images } from "lucide-react";
+import { productImages } from "@/lib/mockImages";
 import { inr } from "@/lib/format";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
 import { ProductImageUploader } from "@/components/admin/ProductImageUploader";
 import { DataTable } from "@/components/admin/DataTable";
 import {
-  listProducts,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  seedProductsToFirestore,
-  type DbProduct,
-  type ProductInput,
-} from "@/lib/db/catalog";
-import { categories } from "@/lib/data";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { CloudinaryService } from "@/services/cloudinaryService";
+import { ProductService } from "@/services/productService";
+import type { Product, ProductImage } from "@/types/product";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/products")({
   head: () => ({ meta: [{ title: "Products — Admin" }, { name: "robots", content: "noindex" }] }),
-  component: AdminProducts,
+  component: AdminProductsPage,
 });
 
-const empty: ProductInput = {
+const initialProductForm = {
   name: "",
-  category: "ghee",
   description: "",
+  category: "",
+  price: "",
+  mrp: "",
+  stock: "",
   weight: "",
-  price: 0,
-  mrp: 0,
-  stock: 0,
   sku: "",
-  imageUrls: [],
+  featured: false,
   bestSeller: false,
   newArrival: false,
-  featured: false,
 };
 
+function AdminProductsPage() {
+  return (
+    <AdminProductsErrorBoundary>
+      <AdminProducts />
+    </AdminProductsErrorBoundary>
+  );
+}
+
 function AdminProducts() {
-  const qc = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [editing, setEditing] = useState<{ id: string | null; data: ProductInput } | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editingImages, setEditingImages] = useState<string | null>(null);
+  const [productFiles, setProductFiles] = useState<(File | null)[]>(Array.from({ length: 5 }, () => null));
+  const [uploadedImages, setUploadedImages] = useState<ProductImage[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productForm, setProductForm] = useState(initialProductForm);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [imageDraft, setImageDraft] = useState<(string | null)[]>(Array.from({ length: 5 }, () => null));
+  const [imageFiles, setImageFiles] = useState<(File | null)[]>(Array.from({ length: 5 }, () => null));
+  const [isUpdatingImages, setIsUpdatingImages] = useState(false);
+  const [imageManagementError, setImageManagementError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<string[]>([]);
+  const submittingRef = useRef(false);
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ["admin-products"],
-    queryFn: listProducts,
-  });
+  useEffect(() => {
+    const loadProducts = async () => {
+      setIsLoadingProducts(true);
+      try {
+        const fetchedProducts = await ProductService.getProducts();
+        setProducts(fetchedProducts);
+      } catch (error) {
+        console.error("Failed to load products", error);
+        toast.error("Failed to load products");
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    };
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-products"] });
+    loadProducts();
+  }, []);
 
-  const save = useMutation({
-    mutationFn: async ({ id, data }: { id: string | null; data: ProductInput }) =>
-      id ? updateProduct(id, data) : createProduct(data),
-    onSuccess: (_r, v) => {
-      toast.success(v.id ? "Product updated" : "Product created");
-      setEditing(null);
-      invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message ?? "Could not save product"),
-  });
+  const currentEditingProduct = useMemo(
+    () => products.find((product) => product.id === editingImages) ?? null,
+    [editingImages, products],
+  );
 
-  const remove = useMutation({
-    mutationFn: (id: string) => deleteProduct(id),
-    onSuccess: () => {
-      toast.success("Product deleted");
-      invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message ?? "Could not delete product"),
-  });
+  const updateProductForm = useCallback((key: keyof typeof productForm, value: string | boolean) => {
+    setProductForm((prev) => ({ ...prev, [key]: value }));
+  }, [productForm]);
 
-  const seed = useMutation({
-    mutationFn: seedProductsToFirestore,
-    onSuccess: (n) => {
-      toast.success(`Imported ${n} demo products`);
-      invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message ?? "Import failed"),
-  });
+  const resetForm = useCallback(() => {
+    setProductForm(initialProductForm);
+    setEditingProductId(null);
+    setProductFiles(Array.from({ length: 5 }, () => null));
+    setUploadedImages([]);
+    setUploadError(null);
+  }, []);
 
-  const rows = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.sku?.toLowerCase().includes(q) ||
-        p.category?.toLowerCase().includes(q),
-    );
-  }, [products, search]);
+  const populateForm = useCallback((product: Product) => {
+    setProductForm({
+      name: product.name,
+      description: product.description,
+      category: product.category || "",
+      price: String(product.price),
+      mrp: String(product.mrp),
+      stock: String(product.stock),
+      weight: product.weight || "",
+      sku: product.sku || "",
+      featured: product.featured,
+      bestSeller: product.bestSeller,
+      newArrival: product.newArrival,
+    });
+    setEditingProductId(product.id);
+    setShowAdd(true);
+  }, []);
+
+  const handleDeleteProduct = async (id: string) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+
+    try {
+      await ProductService.deleteProduct(id);
+      setProducts((prev) => prev.filter((product) => product.id !== id));
+      toast.success("Product deleted successfully");
+      setDeleteTargetId(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete product.";
+      toast.error(message);
+    } finally {
+      submittingRef.current = false;
+    }
+  };
+
+  const resetImageManager = useCallback(() => {
+    setImageDraft(Array.from({ length: 5 }, () => null));
+    setImageFiles(Array.from({ length: 5 }, () => null));
+    setImageManagementError(null);
+  }, []);
+
+  const handleOpenImageManager = useCallback((productId: string) => {
+    const product = products.find((item) => item.id === productId);
+    if (!product) return;
+
+    const nextDraft = Array.from({ length: 5 }, (_, index) => product.images[index]?.url ?? null);
+    setImageDraft(nextDraft);
+    setImageFiles(Array.from({ length: 5 }, () => null));
+    setImageManagementError(null);
+    setEditingImages(productId);
+  }, [products]);
+
+  const handleSaveImages = async () => {
+    if (!editingImages || isUpdatingImages || submittingRef.current) return;
+
+    const productToUpdate = products.find((item) => item.id === editingImages);
+    if (!productToUpdate) return;
+
+    submittingRef.current = true;
+    setIsUpdatingImages(true);
+    setImageManagementError(null);
+
+    try {
+      const remainingExistingImages = [...productToUpdate.images];
+      const nextImages: ProductImage[] = [];
+
+      for (let index = 0; index < 5; index += 1) {
+        const preview = imageDraft[index];
+        const file = imageFiles[index];
+
+        if (file) {
+          const uploadedImage = await CloudinaryService.uploadImage(file, "products");
+          nextImages.push(uploadedImage);
+          continue;
+        }
+
+        if (!preview) continue;
+
+        const existingMatch = remainingExistingImages.find((image) => image.url === preview);
+        if (existingMatch) {
+          nextImages.push(existingMatch);
+          remainingExistingImages.splice(remainingExistingImages.indexOf(existingMatch), 1);
+        }
+      }
+
+      await ProductService.updateProduct(editingImages, {
+        images: nextImages,
+        updatedAt: new Date(),
+      });
+
+      setProducts((prev) => prev.map((product) => (product.id === editingImages ? { ...product, images: nextImages, updatedAt: new Date() } : product)));
+      toast.success("Images updated successfully");
+      setEditingImages(null);
+      resetImageManager();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update images.";
+      setImageManagementError(message);
+      toast.error(message);
+    } finally {
+      submittingRef.current = false;
+      setIsUpdatingImages(false);
+    }
+  };
+
+  const validateProductForm = useCallback(() => {
+    const errors: string[] = [];
+
+    if (!productForm.name.trim()) errors.push("Product name is required.");
+    if (!productForm.category.trim()) errors.push("Category is required.");
+    if (!productForm.price || Number(productForm.price) <= 0) errors.push("Price must be greater than 0.");
+    if (!productForm.mrp || Number(productForm.mrp) <= 0) errors.push("MRP must be greater than 0.");
+    if (!productForm.stock || Number(productForm.stock) < 0) errors.push("Stock cannot be negative.");
+
+    return errors;
+  }, [productForm]);
+
+  const handleSaveProduct = async () => {
+    if (isUploading || isSaving || submittingRef.current) return;
+
+    const errors = validateProductForm();
+    if (errors.length > 0) {
+      setFormErrors(errors);
+      toast.error(errors[0]);
+      return;
+    }
+
+    const selectedFiles = productFiles.filter((file): file is File => Boolean(file)).slice(0, 5);
+
+    submittingRef.current = true;
+    setIsUploading(true);
+    setIsSaving(true);
+    setUploadError(null);
+    setFormErrors([]);
+
+    try {
+      const images = selectedFiles.length > 0
+        ? await CloudinaryService.uploadImages(selectedFiles, "products")
+        : [];
+
+      setUploadedImages(images);
+
+      const payload: Omit<Product, "id"> = {
+        name: productForm.name.trim(),
+        slug: createSlug(productForm.name),
+        description: productForm.description.trim(),
+        category: productForm.category.trim(),
+        categoryId: "",
+        categoryName: productForm.category.trim(),
+        price: Number(productForm.price) || 0,
+        mrp: Number(productForm.mrp) || 0,
+        discount: Math.max(0, (Number(productForm.mrp) || 0) - (Number(productForm.price) || 0)),
+        stock: Number(productForm.stock) || 0,
+        images,
+        featured: productForm.featured,
+        bestSeller: productForm.bestSeller,
+        newArrival: productForm.newArrival,
+        rating: 0,
+        reviewCount: 0,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        weight: productForm.weight.trim(),
+        sku: productForm.sku.trim(),
+      };
+
+      if (editingProductId) {
+        await ProductService.updateProduct(editingProductId, {
+          ...payload,
+          updatedAt: new Date(),
+        });
+        setProducts((prev) => prev.map((product) => (product.id === editingProductId ? { ...product, ...payload, updatedAt: new Date() } : product)));
+        toast.success("Product updated successfully");
+      } else {
+        const createdId = await ProductService.createProduct(payload);
+        const createdProduct: Product = {
+          id: createdId,
+          ...payload,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        setProducts((prev) => [createdProduct, ...prev]);
+        toast.success("Product created successfully");
+      }
+
+      resetForm();
+      setShowAdd(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to save product.";
+      setUploadError(message);
+      toast.error(message);
+    } finally {
+      submittingRef.current = false;
+      setIsUploading(false);
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2">
           <Search className="h-4 w-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search products…"
-            className="w-56 bg-transparent text-sm outline-none"
-          />
+          <input placeholder="Search products…" className="w-56 bg-transparent text-sm outline-none" />
         </div>
-        <div className="flex items-center gap-2">
-          {products.length === 0 && !isLoading && (
-            <button
-              onClick={() => seed.mutate()}
-              disabled={seed.isPending}
-              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-bold hover:bg-secondary disabled:opacity-60"
-            >
-              {seed.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
-              Import demo catalogue
-            </button>
-          )}
-          <button
-            onClick={() => setEditing({ id: null, data: { ...empty } })}
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary-hover"
-          >
-            <Plus className="h-4 w-4" /> Add Product
-          </button>
-        </div>
+        <button
+          onClick={() => setShowAdd((v) => !v)}
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary-hover"
+        >
+          <Plus className="h-4 w-4" /> Add Product
+          {showAdd ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
       </div>
 
-      {editing && (
-        <ProductForm
-          value={editing.data}
-          isEdit={!!editing.id}
-          saving={save.isPending}
-          onCancel={() => setEditing(null)}
-          onChange={(data) => setEditing((s) => (s ? { ...s, data } : s))}
-          onSave={() => save.mutate(editing)}
-        />
+      {showAdd && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary">
+            {editingProductId ? "Edit Product" : "New Product"}
+          </h3>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Product Name"
+              placeholder="e.g. A2 Cow Desi Ghee"
+              value={productForm.name}
+              onChange={(e) => updateProductForm("name", e.target.value)}
+            />
+            <Field
+              label="Description"
+              placeholder="Enter product description"
+              textarea
+              value={productForm.description}
+              onChange={(e) => updateProductForm("description", e.target.value)}
+            />
+            <Field
+              label="Category"
+              placeholder="ghee"
+              value={productForm.category}
+              onChange={(e) => updateProductForm("category", e.target.value)}
+            />
+            <Field
+              label="Price (₹)"
+              placeholder="899"
+              type="number"
+              value={productForm.price}
+              onChange={(e) => updateProductForm("price", e.target.value)}
+            />
+            <Field
+              label="MRP (₹)"
+              placeholder="1099"
+              type="number"
+              value={productForm.mrp}
+              onChange={(e) => updateProductForm("mrp", e.target.value)}
+            />
+            <Field
+              label="Stock"
+              placeholder="24"
+              type="number"
+              value={productForm.stock}
+              onChange={(e) => updateProductForm("stock", e.target.value)}
+            />
+            <Field
+              label="Weight"
+              placeholder="500 ml"
+              value={productForm.weight}
+              onChange={(e) => updateProductForm("weight", e.target.value)}
+            />
+            <Field
+              label="SKU"
+              placeholder="GHEE-500"
+              value={productForm.sku}
+              onChange={(e) => updateProductForm("sku", e.target.value)}
+            />
+          </div>
+          <div className="mt-4 flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={productForm.featured}
+                onChange={(e) => updateProductForm("featured", e.target.checked)}
+                className="h-4 w-4 rounded border-border bg-background"
+              />
+              Featured
+            </label>
+            <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={productForm.bestSeller}
+                onChange={(e) => updateProductForm("bestSeller", e.target.checked)}
+                className="h-4 w-4 rounded border-border bg-background"
+              />
+              Best Seller
+            </label>
+            <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={productForm.newArrival}
+                onChange={(e) => updateProductForm("newArrival", e.target.checked)}
+                className="h-4 w-4 rounded border-border bg-background"
+              />
+              New Arrival
+            </label>
+          </div>
+          <div className="mt-5">
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Product Images (up to 5)
+            </label>
+            <div className="mt-2">
+              <ProductImageUploader onFilesChange={setProductFiles} />
+            </div>
+          </div>
+          <div className="mt-5 flex flex-col gap-3">
+            {formErrors.length > 0 ? (
+              <div className="rounded-xl border border-sale/30 bg-sale/10 p-3 text-sm text-sale">
+                {formErrors.map((message) => <div key={message}>{message}</div>)}
+              </div>
+            ) : null}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  resetForm();
+                  setShowAdd(false);
+                }}
+                className="rounded-full border border-border px-4 py-2 text-sm font-bold hover:bg-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveProduct}
+                disabled={isUploading || isSaving}
+                className="rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isUploading ? "Uploading..." : isSaving ? "Saving..." : editingProductId ? "Save Changes" : "Save Product"}
+              </button>
+            </div>
+            {uploadError ? (
+              <p className="text-right text-sm text-sale">{uploadError}</p>
+            ) : null}
+            {!uploadError && uploadedImages.length > 0 ? (
+              <p className="text-right text-sm text-muted-foreground">
+                Uploaded {uploadedImages.length} image{uploadedImages.length > 1 ? "s" : ""}.
+              </p>
+            ) : null}
+          </div>
+        </div>
       )}
 
-      {isLoading ? (
-        <div className="grid place-items-center rounded-2xl border border-border bg-card p-12 text-muted-foreground shadow-card">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      {editingImages && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-primary">
+              Edit images — {currentEditingProduct?.name}
+            </h3>
+            <button
+              onClick={() => {
+                setEditingImages(null);
+                resetImageManager();
+              }}
+              className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+            >
+              Close
+            </button>
+          </div>
+          <ProductImageUploader
+            initial={Array.from({ length: 5 }, (_, index) => currentEditingProduct?.images[index]?.url ?? null)}
+            onChange={(nextImages) => setImageDraft(nextImages)}
+            onFilesChange={(nextFiles) => setImageFiles(nextFiles)}
+          />
+          <div className="mt-4 flex flex-col gap-3">
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setEditingImages(null);
+                  resetImageManager();
+                }}
+                className="rounded-full border border-border px-4 py-2 text-sm font-bold hover:bg-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveImages}
+                disabled={isUpdatingImages}
+                className="rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isUpdatingImages ? "Saving..." : "Save Images"}
+              </button>
+            </div>
+            {imageManagementError ? (
+              <p className="text-right text-sm text-sale">{imageManagementError}</p>
+            ) : null}
+          </div>
         </div>
-      ) : rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center text-sm text-muted-foreground shadow-card">
-          No products yet. Add one, or import the demo catalogue to get started.
+      )}
+
+      {isLoadingProducts ? (
+        <div className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+          Loading products...
         </div>
       ) : (
-        <DataTable<DbProduct>
-          columns={[
-            {
-              key: "name",
-              label: "Product",
-              render: (p) => (
-                <div className="flex items-center gap-3">
-                  <ImagePlaceholder
-                    src={p.imageUrls?.[0] ?? undefined}
-                    alt={p.name}
-                    className="h-10 w-10"
-                    rounded="rounded-lg"
-                  />
-                  <div className="min-w-0">
-                    <div className="truncate font-semibold">{p.name}</div>
-                    <div className="text-xs text-muted-foreground">{p.sku}</div>
-                  </div>
+      <DataTable
+        columns={[
+          {
+            key: "name",
+            label: "Product",
+            render: (p) => (
+              <div className="flex items-center gap-3">
+                <ImagePlaceholder
+                  src={productImages(p.id, p.category, 1, 200)[0]}
+                  alt={p.name}
+                  className="h-10 w-10"
+                  rounded="rounded-lg"
+                />
+                <div className="min-w-0">
+                  <div className="truncate font-semibold">{p.name}</div>
+                  <div className="text-xs text-muted-foreground">{p.sku}</div>
                 </div>
-              ),
-            },
-            { key: "category", label: "Category" },
-            { key: "price", label: "Price", render: (p) => inr(p.price) },
-            {
-              key: "stock",
-              label: "Stock",
-              render: (p) => (
-                <span className={p.stock < 10 ? "font-bold text-sale" : "font-semibold"}>{p.stock}</span>
-              ),
-            },
-            {
-              key: "flags",
-              label: "Tags",
-              render: (p) => (
-                <div className="flex flex-wrap gap-1">
-                  {p.bestSeller && <Tag c="bg-turmeric/30">Best</Tag>}
-                  {p.newArrival && <Tag c="bg-leaf/30">New</Tag>}
-                  {p.featured && <Tag c="bg-primary/15 text-primary">Featured</Tag>}
-                </div>
-              ),
-            },
-            {
-              key: "actions",
-              label: "",
-              className: "text-right",
-              render: (p) => (
-                <div className="flex justify-end gap-1">
-                  <button
-                    onClick={() =>
-                      setEditing({
-                        id: p.id,
-                        data: {
-                          name: p.name ?? "",
-                          category: p.category ?? "ghee",
-                          description: p.description ?? "",
-                          weight: p.weight ?? "",
-                          price: p.price ?? 0,
-                          mrp: p.mrp ?? 0,
-                          stock: p.stock ?? 0,
-                          sku: p.sku ?? "",
-                          imageUrls: p.imageUrls ?? [],
-                          bestSeller: !!p.bestSeller,
-                          newArrival: !!p.newArrival,
-                          featured: !!p.featured,
-                        },
-                      })
-                    }
-                    title="Edit product"
-                    className="grid h-8 w-8 place-items-center rounded-full hover:bg-secondary"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Delete "${p.name}"? This cannot be undone.`)) remove.mutate(p.id);
-                    }}
-                    title="Delete product"
-                    className="grid h-8 w-8 place-items-center rounded-full text-sale hover:bg-sale/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ),
-            },
-          ]}
-          rows={rows}
-        />
+              </div>
+            ),
+          },
+          { key: "category", label: "Category" },
+          { key: "price", label: "Price", render: (p) => inr(p.price) },
+          { key: "stock", label: "Stock", render: (p) => (
+            <span className={p.stock < 10 ? "font-bold text-sale" : "font-semibold"}>{p.stock}</span>
+          ) },
+          {
+            key: "flags",
+            label: "Tags",
+            render: (p) => (
+              <div className="flex flex-wrap gap-1">
+                {p.bestSeller && <Tag c="bg-turmeric/30">Best</Tag>}
+                {p.newArrival && <Tag c="bg-leaf/30">New</Tag>}
+                {p.featured && <Tag c="bg-primary/15 text-primary">Featured</Tag>}
+              </div>
+            ),
+          },
+          {
+            key: "actions",
+            label: "",
+            className: "text-right",
+            render: (p) => (
+              <div className="flex justify-end gap-1">
+                <button
+                  onClick={() => handleOpenImageManager(p.id)}
+                  title="Manage images"
+                  className="grid h-8 w-8 place-items-center rounded-full hover:bg-secondary"
+                >
+                  <Images className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => populateForm(p)}
+                  className="grid h-8 w-8 place-items-center rounded-full hover:bg-secondary"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </button>
+                <AlertDialog open={deleteTargetId === p.id} onOpenChange={(open) => setDeleteTargetId(open ? p.id : null)}>
+                  <AlertDialogTrigger asChild>
+                    <button className="grid h-8 w-8 place-items-center rounded-full text-sale hover:bg-sale/10">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete product?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. The product will be removed from Firestore.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleDeleteProduct(p.id)}>
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ),
+          },
+        ]}
+        rows={products}
+      />
       )}
     </div>
   );
 }
 
-function ProductForm({
-  value,
-  isEdit,
-  saving,
-  onChange,
-  onCancel,
-  onSave,
-}: {
-  value: ProductInput;
-  isEdit: boolean;
-  saving: boolean;
-  onChange: (v: ProductInput) => void;
-  onCancel: () => void;
-  onSave: () => void;
-}) {
-  const set = <K extends keyof ProductInput>(k: K, v: ProductInput[K]) =>
-    onChange({ ...value, [k]: v });
+class AdminProductsErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
 
-  return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-      <h3 className="text-sm font-bold uppercase tracking-widest text-primary">
-        {isEdit ? "Edit Product" : "New Product"}
-      </h3>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <Field label="Product Name" value={value.name} onChange={(v) => set("name", v)} />
-        <label className="block">
-          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Category</span>
-          <select
-            value={value.category}
-            onChange={(e) => set("category", e.target.value)}
-            className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          >
-            {categories.map((c) => (
-              <option key={c.slug} value={c.slug}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <Field label="Price (₹)" type="number" value={String(value.price)} onChange={(v) => set("price", Number(v) || 0)} />
-        <Field label="MRP (₹)" type="number" value={String(value.mrp)} onChange={(v) => set("mrp", Number(v) || 0)} />
-        <Field label="Weight" value={value.weight} onChange={(v) => set("weight", v)} />
-        <Field label="Stock" type="number" value={String(value.stock)} onChange={(v) => set("stock", Number(v) || 0)} />
-        <Field label="SKU" value={value.sku} onChange={(v) => set("sku", v)} />
-        <label className="block sm:col-span-2">
-          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Description</span>
-          <textarea
-            value={value.description}
-            onChange={(e) => set("description", e.target.value)}
-            rows={3}
-            className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-        </label>
-      </div>
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
 
-      <div className="mt-4 flex flex-wrap gap-4">
-        <Check label="Best Seller" checked={!!value.bestSeller} onChange={(v) => set("bestSeller", v)} />
-        <Check label="New Arrival" checked={!!value.newArrival} onChange={(v) => set("newArrival", v)} />
-        <Check label="Featured" checked={!!value.featured} onChange={(v) => set("featured", v)} />
-      </div>
-
-      <div className="mt-5">
-        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          Product Images (up to 5)
-        </label>
-        <div className="mt-2">
-          <ProductImageUploader
-            value={value.imageUrls}
-            onChange={(imgs) => set("imageUrls", imgs.filter(Boolean) as string[])}
-          />
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-2xl border border-sale/30 bg-sale/10 p-6 text-sm text-sale">
+          Something went wrong while loading the admin products screen.
         </div>
-      </div>
+      );
+    }
 
-      <div className="mt-5 flex justify-end gap-2">
-        <button
-          onClick={onCancel}
-          className="rounded-full border border-border px-4 py-2 text-sm font-bold hover:bg-secondary"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={onSave}
-          disabled={saving || !value.name.trim()}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
-        >
-          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-          {isEdit ? "Save Changes" : "Save Product"}
-        </button>
-      </div>
-    </div>
-  );
+    return this.props.children;
+  }
+}
+
+function createSlug(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
 function Tag({ children, c }: { children: React.ReactNode; c: string }) {
   return <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${c}`}>{children}</span>;
 }
 
-function Check({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label className="flex items-center gap-2 text-sm font-semibold">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 accent-[var(--color-primary)]"
-      />
-      {label}
-    </label>
-  );
-}
-
 function Field({
   label,
+  placeholder,
   value,
   onChange,
   type = "text",
+  textarea = false,
 }: {
   label: string;
-  value: string;
-  onChange: (v: string) => void;
+  placeholder?: string;
+  value?: string;
+  onChange?: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   type?: string;
+  textarea?: boolean;
 }) {
   return (
     <label className="block">
-      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-      />
+      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+        {label}
+      </span>
+
+      {textarea ? (
+        <textarea
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className="mt-1 min-h-24 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+      )}
     </label>
   );
 }
