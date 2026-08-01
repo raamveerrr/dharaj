@@ -2,13 +2,18 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { ProductCard } from "@/components/customer/ProductCard";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
 import { categoryImage } from "@/lib/mockImages";
-import { getCategory, getProductsByCategory } from "@/lib/data";
+import { getCategory } from "@/lib/data";
+import { ProductService } from "@/services/productService";
 
 export const Route = createFileRoute("/_shop/category/$slug")({
-  loader: ({ params }) => {
+  loader: async ({ params }) => {
     const cat = getCategory(params.slug);
     if (!cat) throw notFound();
-    return { cat, list: getProductsByCategory(params.slug) };
+    const products = await ProductService.getProducts();
+    return {
+      cat,
+      list: products.filter((product) => product.category.toLowerCase() === params.slug.toLowerCase()),
+    };
   },
   head: ({ loaderData }) => ({
     meta: loaderData
@@ -36,7 +41,7 @@ function CategoryPage() {
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-        {list.map((p: import("@/lib/data").Product) => (
+        {list.map((p) => (
           <ProductCard key={p.id} product={p} />
         ))}
       </div>

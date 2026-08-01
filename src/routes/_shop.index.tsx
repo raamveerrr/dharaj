@@ -6,10 +6,14 @@ import { ShortcutCircle } from "@/components/customer/ShortcutCircle";
 import { ProductCard } from "@/components/customer/ProductCard";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
 import { categoryImage } from "@/lib/mockImages";
-import { categories, products } from "@/lib/data";
+import { categories } from "@/lib/data";
 import { useHomepageContent } from "@/hooks/useHomepageContent";
+import { ProductService } from "@/services/productService";
 
 export const Route = createFileRoute("/_shop/")({
+  loader: async () => ({
+    products: await ProductService.getProducts(),
+  }),
   head: () => ({
     meta: [
       { title: "DHARAJ — Pure Organic Grocery, Handmade with Love" },
@@ -30,6 +34,7 @@ export const Route = createFileRoute("/_shop/")({
 
 function Home() {
   const { shortcuts } = useHomepageContent();
+  const { products } = Route.useLoaderData();
   const bestSellers = products.filter((p) => p.bestSeller);
   const newArrivals = products.filter((p) => p.newArrival);
   return (
@@ -87,7 +92,7 @@ function Home() {
                 params={{ slug: c.slug }}
                 className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card hover:shadow-lift"
               >
-                <ImagePlaceholder src={categoryImage(c.slug)} alt={c.name} className="aspect-[4/3] w-full" rounded="rounded-none" />
+                <ImagePlaceholder src={categoryImage(c.slug)} alt={c.name} className="aspect-4/3 w-full" rounded="rounded-none" />
                 <div className="p-3">
                   <div className="text-sm font-bold">{c.name}</div>
                   <div className="text-xs text-muted-foreground">{c.tagline}</div>

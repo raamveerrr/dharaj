@@ -6,17 +6,20 @@ import { motion } from "framer-motion";
 import { ProductGallery } from "@/components/customer/ProductGallery";
 import { ProductReviews } from "@/components/customer/ProductReviews";
 import { ProductCard } from "@/components/customer/ProductCard";
-import { getProduct, products } from "@/lib/data";
 import { productImages } from "@/lib/mockImages";
 import { inr, pct } from "@/lib/format";
 import { useCart } from "@/stores/cart";
 import { useWishlist } from "@/stores/wishlist";
+import { ProductService } from "@/services/productService";
 
 export const Route = createFileRoute("/_shop/product/$id")({
-  loader: ({ params }) => {
-    const product = getProduct(params.id);
+  loader: async ({ params }) => {
+    const product = await ProductService.getProduct(params.id);
     if (!product) throw notFound();
-    return { product };
+    const relatedProducts = (await ProductService.getProducts())
+      .filter((item) => item.category === product.category && item.id !== product.id)
+      .slice(0, 4);
+    return { product, relatedProducts };
   },
   head: ({ loaderData }) => ({
     meta: loaderData
@@ -32,17 +35,19 @@ export const Route = createFileRoute("/_shop/product/$id")({
 });
 
 function ProductPage() {
-  const { product } = Route.useLoaderData();
+  const { product, relatedProducts } = Route.useLoaderData();
   const [qty, setQty] = useState(1);
   const add = useCart((s) => s.add);
   const wished = useWishlist((s) => s.has(product.id));
   const toggle = useWishlist((s) => s.toggle);
   const discount = pct(product.mrp, product.price);
-  const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
-  const gallery = useMemo(
-    () => productImages(product.id, product.category, Math.min(product.images, 5), 1000),
-    [product.id, product.category, product.images],
-  );
+  const gallery = useMemo(() => {
+    if (product.images?.length) {
+      return product.images.map((image) => image.url);
+    }
+
+    return productImages(product.id, product.category, 5, 1000);
+  }, [product.id, product.category, product.images]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
@@ -74,7 +79,7 @@ function ProductPage() {
               <Star className="h-3.5 w-3.5 fill-turmeric text-turmeric" />
               {product.rating.toFixed(1)}
             </span>
-            <span className="text-muted-foreground">({product.reviewsCount} reviews)</span>
+            <span className="text-muted-foreground">({product.reviewCount} reviews)</span>
           </div>
           <div className="mt-4 flex items-end gap-3">
             <span className="text-3xl font-extrabold text-primary">{inr(product.price)}</span>
@@ -187,7 +192,7 @@ function ProductPage() {
       <div className="mt-12">
         <h2 className="mb-4 text-xl font-extrabold">You may also like</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-          {related.map((p) => (
+          {relatedProducts.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>

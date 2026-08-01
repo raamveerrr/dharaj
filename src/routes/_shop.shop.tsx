@@ -1,10 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ProductCard } from "@/components/customer/ProductCard";
-import { categories, products } from "@/lib/data";
+import { categories } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { ProductService } from "@/services/productService";
 
 export const Route = createFileRoute("/_shop/shop")({
+  loader: async () => ({
+    products: await ProductService.getProducts(),
+  }),
   head: () => ({
     meta: [
       { title: "Shop All Products — DHARAJ" },
@@ -17,6 +21,7 @@ export const Route = createFileRoute("/_shop/shop")({
 });
 
 function ShopPage() {
+  const { products } = Route.useLoaderData();
   const [cat, setCat] = useState<string | null>(null);
   const [sort, setSort] = useState("popular");
   let list = cat ? products.filter((p) => p.category === cat) : products;
