@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Heart, Plus, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import type { Product } from "@/lib/data";
+import type { Product } from "@/types/product";
 import { inr, pct } from "@/lib/format";
 import { useWishlist } from "@/stores/wishlist";
 import { useCart } from "@/stores/cart";
@@ -14,7 +14,7 @@ export function ProductCard({ product }: { product: Product }) {
   const toggle = useWishlist((s) => s.toggle);
   const add = useCart((s) => s.add);
   const discount = pct(product.mrp, product.price);
-  const cover = productImages(product.id, product.category, 1, 500)[0];
+  const cover = product.images?.[0]?.url ?? productImages(product.id, product.category, 1, 500)[0];
 
   return (
     <motion.div
@@ -62,8 +62,8 @@ export function ProductCard({ product }: { product: Product }) {
         </Link>
         <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
           <Star className="h-3 w-3 fill-turmeric text-turmeric" />
-          <span className="font-medium text-foreground">{product.rating.toFixed(1)}</span>
-          <span>({product.reviewsCount})</span>
+          <span className="font-medium text-foreground">{Number(product.rating ?? 0).toFixed(1)}</span>
+          <span>({product.reviewCount})</span>
         </div>
         <div className="mt-auto flex items-end justify-between pt-2">
           <div>

@@ -1,48 +1,56 @@
 import { useEffect, useState } from "react";
-import { Upload, X, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
-import { uploadImage } from "@/lib/storage";
 
 interface Props {
-  /** Controlled list of image URLs. */
   value?: (string | null)[];
   initial?: (string | null)[];
   max?: number;
   onChange?: (images: (string | null)[]) => void;
+  onFilesChange?: (files: (File | null)[]) => void;
 }
 
-// Frontend-only image upload slots. Uses object URLs for preview so the
-// architecture already accepts real File uploads; wire to storage later.
-export function ProductImageUploader({ initial, max = 5, onChange }: Props) {
-  const [images, setImages] = useState<(string | null)[]>(
-    () => initial ?? Array.from({ length: max }, () => null),
-  );
-  const [busy, setBusy] = useState<number | null>(null);
+function pad<T>(items: T[], length: number): T[] {
+  return Array.from({ length: length }, (_, index) => items[index] ?? null as T);
+}
+
+export function ProductImageUploader({ initial, value, max = 5, onChange, onFilesChange }: Props) {
+  const [images, setImages] = useState<(string | null)[]>(() => initial ?? Array.from({ length: max }, () => null));
+  const [files, setFiles] = useState<(File | null)[]>(() => Array.from({ length: max }, () => null));
 
   useEffect(() => {
-    if (value) setImages(pad(value, max));
+    if (value) {
+      setImages(pad(value, max));
+    }
   }, [value, max]);
 
-  // Actual selected files
-  const [files, setFiles] = useState<(File | null)[]>(
-    () => Array.from({ length: max }, () => null)
-  );
+  const update = (nextImages: (string | null)[], nextFiles?: (File | null)[]) => {
+    setImages(nextImages);
+    onChange?.(nextImages);
+    if (nextFiles) {
+      setFiles(nextFiles);
+      onFilesChange?.(nextFiles);
+    }
+  };
 
   const handleFile = (i: number, file: File | undefined) => {
     if (!file) return;
     const url = URL.createObjectURL(file);
-    const next = [...images];
-    next[i] = url;
-    update(next);
+    const nextImages = [...images];
+    nextImages[i] = url;
+    const nextFiles = [...files];
+    nextFiles[i] = file;
+    update(nextImages, nextFiles);
   };
 
   const clear = (i: number) => {
-    const next = [...images];
-    if (next[i]?.startsWith("blob:")) URL.revokeObjectURL(next[i]!);
-    next[i] = null;
-    update(next);
+    const nextImages = [...images];
+    if (nextImages[i]?.startsWith("blob:")) URL.revokeObjectURL(nextImages[i]!);
+    nextImages[i] = null;
+    const nextFiles = [...files];
+    nextFiles[i] = null;
+    update(nextImages, nextFiles);
   };
 
   return (
@@ -71,7 +79,6 @@ export function ProductImageUploader({ initial, max = 5, onChange }: Props) {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                disabled={busy !== null}
                 onChange={(e) => handleFile(i, e.target.files?.[0])}
               />
             </label>
