@@ -3,6 +3,7 @@ import { Minus, Plus, ShoppingBag, Tag, Trash2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
+import { CouponService } from "@/services/couponService";
 import { useCart } from "@/stores/cart";
 import { inr } from "@/lib/format";
 
@@ -23,6 +24,7 @@ function CartPage() {
   const setQty = useCart((s) => s.setQty);
   const remove = useCart((s) => s.remove);
   const applyCoupon = useCart((s) => s.applyCoupon);
+  const setCouponDiscount = useCart((s) => s.setCouponDiscount);
   const coupon = useCart((s) => s.coupon);
   const subtotal = useCart((s) => s.subtotal());
   const discount = useCart((s) => s.discount());
@@ -30,6 +32,34 @@ function CartPage() {
   const gst = useCart((s) => s.gst());
   const total = useCart((s) => s.total());
   const [code, setCode] = useState(coupon ?? "");
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
+  const handleApplyCoupon = async () => {
+    const trimmed = code.trim();
+    if (!trimmed) {
+      applyCoupon(null);
+      setCouponDiscount(0);
+      toast.success("Coupon cleared");
+      return;
+    }
+
+    setIsApplyingCoupon(true);
+
+    try {
+      const result = await CouponService.validateCoupon(trimmed, subtotal);
+      applyCoupon(result.coupon.code);
+      setCouponDiscount(result.discount);
+      setCode(result.coupon.code);
+      toast.success(`Coupon ${result.coupon.code} applied — you save ${inr(result.discount)}`);
+    } catch (error) {
+      applyCoupon(null);
+      setCouponDiscount(0);
+      const message = error instanceof Error ? error.message : "Unable to apply coupon.";
+      toast.error(message);
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
 
   if (lines.length === 0) {
     return (
@@ -115,13 +145,11 @@ function CartPage() {
                 className="flex-1 rounded-full border border-border bg-secondary/60 px-4 py-2 text-sm outline-none"
               />
               <button
-                onClick={() => {
-                  applyCoupon(code);
-                  toast.success(code ? `Coupon ${code} applied` : "Coupon cleared");
-                }}
-                className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                onClick={handleApplyCoupon}
+                disabled={isApplyingCoupon}
+                className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Apply
+                {isApplyingCoupon ? "Applying..." : "Apply"}
               </button>
             </div>
             {coupon && discount > 0 && (
