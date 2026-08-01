@@ -5,6 +5,7 @@ import { Loader2, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
 import { ProductImageUploader } from "@/components/admin/ProductImageUploader";
+import { CloudinaryService } from "@/services/cloudinaryService";
 import {
   getHomepage,
   saveHomepage,
@@ -24,13 +25,38 @@ function AdminHomepage() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["homepage"], queryFn: getHomepage });
   const [draft, setDraft] = useState<HomepageContent | null>(null);
+  const [bannerFiles, setBannerFiles] = useState<Record<string, File | null>>({});
+  const [shortcutFiles, setShortcutFiles] = useState<Record<string, File | null>>({});
 
   useEffect(() => {
     if (data && !draft) setDraft(data);
   }, [data, draft]);
 
   const save = useMutation({
-    mutationFn: (c: HomepageContent) => saveHomepage(c),
+    mutationFn: async (content: HomepageContent) => {
+      const uploadedBanners = await Promise.all(
+        content.banners.map(async (banner) => {
+          const pendingFile = bannerFiles[banner.id];
+          if (!pendingFile) return banner;
+          const uploaded = await CloudinaryService.uploadImage(pendingFile, "banners");
+          return { ...banner, imageUrl: uploaded.url };
+        }),
+      );
+      const uploadedShortcuts = await Promise.all(
+        content.shortcuts.map(async (shortcut) => {
+          const pendingFile = shortcutFiles[shortcut.id];
+          if (!pendingFile) return shortcut;
+          const uploaded = await CloudinaryService.uploadImage(pendingFile, "shortcuts");
+          return { ...shortcut, imageUrl: uploaded.url };
+        }),
+      );
+
+      return saveHomepage({
+        ...content,
+        banners: uploadedBanners,
+        shortcuts: uploadedShortcuts,
+      });
+    },
     onSuccess: () => {
       toast.success("Homepage saved");
       qc.invalidateQueries({ queryKey: ["homepage"] });
@@ -107,9 +133,11 @@ function AdminHomepage() {
                   </span>
                   <ProductImageUploader
                     max={1}
-                    folder="banners"
                     value={[b.imageUrl]}
                     onChange={(imgs) => setBanner(i, { imageUrl: imgs[0] ?? "" })}
+                    onFilesChange={(files) =>
+                      setBannerFiles((prev) => ({ ...prev, [b.id]: files[0] ?? null }))
+                    }
                   />
                 </div>
               </div>
@@ -150,9 +178,11 @@ function AdminHomepage() {
               </div>
               <ProductImageUploader
                 max={1}
-                folder="shortcuts"
                 value={[s.imageUrl]}
                 onChange={(imgs) => setShortcut(i, { imageUrl: imgs[0] ?? "" })}
+                onFilesChange={(files) =>
+                  setShortcutFiles((prev) => ({ ...prev, [s.id]: files[0] ?? null }))
+                }
               />
               <div className="flex justify-end">
                 <IconBtn
