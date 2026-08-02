@@ -58,7 +58,7 @@ export const useCart = create<CartState>()(
           return {
             lines: [
               ...s.lines,
-              { productId: p.id, name: p.name, price: p.price, mrp: p.mrp, weight: p.weight, qty },
+              { productId: p.id, name: p.name, price: p.price, mrp: p.mrp, weight: p.weight, qty, image: firstImage(p) },
             ],
           };
         }),
