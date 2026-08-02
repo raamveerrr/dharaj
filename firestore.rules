@@ -64,10 +64,34 @@ service cloud.firestore {
 
     // ---------- orders ----------
     match /orders/{doc} {
-      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAdmin();
+      // Customers read only their own orders; admins read everything.
+      allow read: if isAdmin() || (isSignedIn() && resource.data.customerId == request.auth.uid);
+
+      // A customer may create their own order, always starting unpaid + pending.
+      allow create: if isSignedIn()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.paymentStatus == 'Awaiting Payment'
+        && request.resource.data.orderStatus == 'Pending';
+
+      // Owners may only flag that WhatsApp was opened. Status fields are admin-only.
+      allow update: if isAdmin()
+        || (
+          isSignedIn()
+          && resource.data.customerId == request.auth.uid
+          && request.resource.data.paymentStatus == resource.data.paymentStatus
+          && request.resource.data.orderStatus == resource.data.orderStatus
+          && request.resource.data.total == resource.data.total
+          && request.resource.data.customerId == resource.data.customerId
+        );
+
+      allow delete: if isAdmin();
     }
+
+    // ---------- readable order-number counter ----------
+    match /counters/{doc} {
+      allow read, write: if isSignedIn();
+    }
+
 
     // ---------- admin-only collections ----------
     match /inventory/{doc} { allow read, write: if isAdmin(); }
