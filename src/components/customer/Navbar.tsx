@@ -1,10 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Search, X, ChevronDown, Leaf, Menu } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { categories, products } from "@/lib/data";
 import { useUI } from "@/stores/ui";
 import { cn } from "@/lib/utils";
+import { CategoryService } from "@/services/categoryService";
+import { ProductService } from "@/services/productService";
+import type { Product } from "@/types/product";
 
 function Logo() {
   return (
@@ -19,6 +21,22 @@ function Logo() {
 
 function SearchBar({ mobile = false }: { mobile?: boolean }) {
   const [q, setQ] = useState("");
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    let active = true;
+
+    const load = async () => {
+      const data = await ProductService.getProducts();
+      if (active) setProducts(data);
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const results = q
     ? products.filter((p) => p.name.toLowerCase().includes(q.toLowerCase())).slice(0, 6)
     : [];
@@ -75,6 +93,30 @@ function SearchBar({ mobile = false }: { mobile?: boolean }) {
 export function Navbar() {
   const openMobileMenu = useUI((s) => s.openMobileMenu);
   const [dropdown, setDropdown] = useState<null | "cat" | "about" | "cust">(null);
+  const [categories, setCategories] = useState<Array<{ id: string; slug: string; name: string; tagline: string; icon: string }>>([]);
+
+  useEffect(() => {
+    let active = true;
+
+    const load = async () => {
+      const list = await CategoryService.getCategories();
+      if (!active) return;
+      setCategories(
+        list.map((category) => ({
+          id: category.id,
+          slug: category.slug,
+          name: category.name,
+          tagline: category.description,
+          icon: category.slug.includes("ghee") ? "🧈" : category.slug.includes("pickle") ? "🥭" : category.slug.includes("spice") ? "🌶️" : category.slug.includes("cookie") ? "🍪" : category.slug.includes("gulkand") ? "🌹" : category.slug.includes("amla") ? "🟢" : category.slug.includes("pulse") ? "🌾" : "🥜",
+        })),
+      );
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">

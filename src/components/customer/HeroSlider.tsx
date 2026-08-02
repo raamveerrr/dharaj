@@ -12,13 +12,13 @@ export function HeroSlider() {
   const n = heroSlides.length;
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || n <= 1) return;
     const t = setInterval(() => setI((v) => (v + 1) % n), 4000);
     return () => clearInterval(t);
   }, [paused, n]);
 
-  const slide = heroSlides[i % Math.max(heroSlides.length, 1)];
-  if (!slide) return null;
+  if (!heroSlides.length) return null;
+  const slide = heroSlides[i % n];
 
   return (
     <section

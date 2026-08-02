@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 type NavItem = { to: string; label: string; icon: typeof Home; exact?: boolean };
 const items: NavItem[] = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/categories", label: "Categories", icon: Package },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { to: "/admin/customers", label: "Customers", icon: Users },

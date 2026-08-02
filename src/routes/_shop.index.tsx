@@ -1,14 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ArrowRight, Leaf, ShieldCheck, Sprout, Truck } from "lucide-react";
+import { useEffect, useState } from "react";
 import { HeroSlider } from "@/components/customer/HeroSlider";
 import { ShortcutCircle } from "@/components/customer/ShortcutCircle";
 import { ProductCard } from "@/components/customer/ProductCard";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
-import { categoryImage } from "@/lib/mockImages";
-import { categories } from "@/lib/data";
 import { useHomepageContent } from "@/hooks/useHomepageContent";
 import { ProductService } from "@/services/productService";
+import { CategoryService } from "@/services/categoryService";
+import type { Product } from "@/types/product";
 
 export const Route = createFileRoute("/_shop/")({
   loader: async () => ({
@@ -34,7 +35,29 @@ export const Route = createFileRoute("/_shop/")({
 
 function Home() {
   const { shortcuts } = useHomepageContent();
-  const { products } = Route.useLoaderData();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Array<{ id: string; slug: string; name: string; tagline: string; image?: string }>>([]);
+
+  useEffect(() => {
+    const unsubscribeProducts = ProductService.subscribeProducts((nextProducts) => {
+      setProducts(nextProducts);
+    });
+    const unsubscribeCategories = CategoryService.subscribeCategories((nextCategories) => {
+      setCategories(nextCategories.map((category) => ({
+        id: category.id,
+        slug: category.slug,
+        name: category.name,
+        tagline: category.description,
+        image: category.image,
+      })));
+    });
+
+    return () => {
+      unsubscribeProducts();
+      unsubscribeCategories();
+    };
+  }, []);
+
   const bestSellers = products.filter((p) => p.bestSeller);
   const newArrivals = products.filter((p) => p.newArrival);
   return (
@@ -92,7 +115,7 @@ function Home() {
                 params={{ slug: c.slug }}
                 className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card hover:shadow-lift"
               >
-                <ImagePlaceholder src={categoryImage(c.slug)} alt={c.name} className="aspect-4/3 w-full" rounded="rounded-none" />
+                <ImagePlaceholder src={c.image || ""} alt={c.name} className="aspect-4/3 w-full" rounded="rounded-none" />
                 <div className="p-3">
                   <div className="text-sm font-bold">{c.name}</div>
                   <div className="text-xs text-muted-foreground">{c.tagline}</div>

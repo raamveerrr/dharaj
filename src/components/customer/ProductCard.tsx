@@ -7,14 +7,13 @@ import { inr, pct } from "@/lib/format";
 import { useWishlist } from "@/stores/wishlist";
 import { useCart } from "@/stores/cart";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
-import { productImages } from "@/lib/mockImages";
 
 export function ProductCard({ product }: { product: Product }) {
   const wished = useWishlist((s) => s.has(product.id));
   const toggle = useWishlist((s) => s.toggle);
   const add = useCart((s) => s.add);
   const discount = pct(product.mrp, product.price);
-  const cover = product.images?.[0]?.url ?? productImages(product.id, product.category, 1, 500)[0];
+  const cover = product.images?.[0]?.url ?? "";
 
   return (
     <motion.div

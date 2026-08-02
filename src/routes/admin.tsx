@@ -1,13 +1,12 @@
 import { Outlet, createFileRoute, useRouterState, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Leaf, ShieldAlert, LogOut } from "lucide-react";
+import { X, Leaf } from "lucide-react";
 import { toast } from "sonner";
 import { ClientOnly } from "@tanstack/react-router";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminTopbar } from "@/components/admin/AdminTopbar";
 import { AuthInit } from "@/components/auth/AuthInit";
-import { AuthShell } from "@/components/auth/AuthShell";
 import { LoadingScreen } from "@/components/auth/LoadingScreen";
 import { useAuth } from "@/stores/auth";
 
@@ -17,6 +16,7 @@ export const Route = createFileRoute("/admin")({
 
 const titles: Record<string, string> = {
   "/admin/dashboard": "Dashboard",
+  "/admin/categories": "Categories",
   "/admin/products": "Products",
   "/admin/orders": "Orders",
   "/admin/customers": "Customers",
@@ -32,87 +32,51 @@ function AdminRoute() {
   return (
     <ClientOnly fallback={<LoadingScreen label="Loading admin…" />}>
       <AuthInit />
-      <AdminGate />
+      <ProtectedAdminRoute />
     </ClientOnly>
   );
 }
 
-function AdminGate() {
+function ProtectedAdminRoute() {
   const { user, profile, loading } = useAuth();
+  const logout = useAuth((s) => s.logout);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const isLoginRoute = pathname === "/admin/login";
-  // While navigating away from /admin/* this component can still be mounted for
-  // one render — never redirect back into the admin area in that case.
   const inAdminArea = pathname.startsWith("/admin");
 
   useEffect(() => {
-    if (loading || isLoginRoute || !inAdminArea) return;
+    if (!inAdminArea || isLoginRoute || loading) return;
+
+    const redirectToLogin = async () => {
+      try {
+        if (user && (!profile || profile.role !== "admin")) {
+          await logout();
+        }
+      } finally {
+        navigate({ to: "/auth/login", replace: true });
+      }
+    };
+
     if (!user) {
-      navigate({ to: "/admin/login", replace: true });
+      navigate({ to: "/auth/login", replace: true });
       return;
     }
-    if (profile && profile.role !== "admin") {
+
+    if (!profile || profile.role !== "admin") {
       toast.error("Access Denied", {
         description: "This area is restricted to administrators.",
       });
-      const t = setTimeout(() => navigate({ to: "/profile", replace: true }), 1800);
-      return () => clearTimeout(t);
+      redirectToLogin();
     }
-  }, [loading, user, profile, isLoginRoute, inAdminArea, navigate]);
+  }, [inAdminArea, isLoginRoute, loading, user, profile, logout, navigate]);
 
-
-  // The admin login screen renders itself, outside the gate.
   if (isLoginRoute) return <Outlet />;
-  if (loading) return <LoadingScreen label="Loading admin…" />;
-  if (!user) return <LoadingScreen label="Redirecting…" />;
-  if (profile?.role !== "admin") return <NotAuthorizedScreen />;
-  return <AdminLayout />;
-}
+  if (loading || !user || !profile || profile.role !== "admin") {
+    return <LoadingScreen label="Redirecting to admin login…" />;
+  }
 
-function NotAuthorizedScreen() {
-  const logout = useAuth((s) => s.logout);
-  const user = useAuth((s) => s.user);
-  return (
-    <AuthShell
-      title="Access Denied"
-      subtitle={user?.email ? `${user.email} is not an admin.` : "Unauthorized access."}
-      footer={
-        <Link to="/auth/login" className="font-semibold text-primary hover:underline">
-          Back to login page
-        </Link>
-      }
-    >
-      <div className="mb-5 grid place-items-center">
-        <div className="grid h-16 w-16 place-items-center rounded-full bg-destructive/10 text-destructive">
-          <ShieldAlert className="h-7 w-7" />
-        </div>
-      </div>
-      <p className="mb-5 text-center text-sm text-muted-foreground">
-        Unauthorized access. This dashboard is restricted to administrators.
-      </p>
-      <div className="space-y-3">
-        <Link
-          to="/auth/login"
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
-        >
-          Back to login page
-        </Link>
-        <Link
-          to="/profile"
-          className="flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold hover:bg-secondary"
-        >
-          Go to my profile
-        </Link>
-        <button
-          onClick={() => logout()}
-          className="flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold hover:bg-secondary"
-        >
-          <LogOut className="h-4 w-4" /> Sign out
-        </button>
-      </div>
-    </AuthShell>
-  );
+  return <AdminLayout />;
 }
 
 function AdminLayout() {

@@ -1,16 +1,16 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Heart, Minus, Plus, ShieldCheck, Star, Truck, Leaf } from "lucide-react";
 import { motion } from "framer-motion";
 import { ProductGallery } from "@/components/customer/ProductGallery";
 import { ProductReviews } from "@/components/customer/ProductReviews";
 import { ProductCard } from "@/components/customer/ProductCard";
-import { productImages } from "@/lib/mockImages";
 import { inr, pct } from "@/lib/format";
 import { useCart } from "@/stores/cart";
 import { useWishlist } from "@/stores/wishlist";
 import { ProductService } from "@/services/productService";
+import type { Product } from "@/types/product";
 
 export const Route = createFileRoute("/_shop/product/$id")({
   loader: async ({ params }) => {
@@ -35,8 +35,35 @@ export const Route = createFileRoute("/_shop/product/$id")({
 });
 
 function ProductPage() {
-  const { product, relatedProducts } = Route.useLoaderData();
+  const initial = Route.useLoaderData();
+  const navigate = useNavigate();
+  const [product, setProduct] = useState(initial.product);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [qty, setQty] = useState(1);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribeProduct = ProductService.subscribeProduct(initial.product.id, (nextProduct) => {
+      if (!nextProduct) return;
+      setProduct(nextProduct);
+      setLoading(false);
+    });
+    const unsubscribeProducts = ProductService.subscribeProducts((nextProducts) => {
+      setAllProducts(nextProducts);
+    });
+
+    return () => {
+      unsubscribeProduct();
+      unsubscribeProducts();
+    };
+  }, [initial.product.id]);
+
+  const relatedProducts = useMemo(() => {
+    return allProducts
+      .filter((item) => item.category === product.category && item.id !== product.id)
+      .slice(0, 4);
+  }, [allProducts, product.category, product.id]);
+
   const add = useCart((s) => s.add);
   const wished = useWishlist((s) => s.has(product.id));
   const toggle = useWishlist((s) => s.toggle);
@@ -46,8 +73,18 @@ function ProductPage() {
       return product.images.map((image) => image.url);
     }
 
-    return productImages(product.id, product.category, 5, 1000);
+    return [] as string[];
   }, [product.id, product.category, product.images]);
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-6">
+        <div className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
+          Loading product details…
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
@@ -71,7 +108,7 @@ function ProductPage() {
         {/* Info */}
         <div>
           <div className="text-xs uppercase tracking-widest text-muted-foreground">
-            {product.brand} · {product.weight}
+            {(product.brand ?? "Dharaj")} · {product.weight}
           </div>
           <h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">{product.name}</h1>
           <div className="mt-2 flex items-center gap-2 text-sm">
@@ -151,7 +188,7 @@ function ProductPage() {
               onClick={() => {
                 add(product, qty);
                 toast.success("Proceeding to checkout");
-                window.location.href = "/checkout";
+                void navigate({ to: "/checkout" });
               }}
               className="flex-1 rounded-full bg-primary py-3 text-sm font-bold text-primary-foreground hover:bg-primary-hover"
             >
@@ -171,7 +208,7 @@ function ProductPage() {
           <h3 className="text-sm font-bold uppercase tracking-widest text-primary">Specifications</h3>
           <dl className="mt-3 space-y-2 text-sm">
             {[
-              ["Brand", product.brand],
+              ["Brand", product.brand ?? "Dharaj"],
               ["Weight", product.weight],
               ["SKU", product.sku],
               ["Category", product.category],
@@ -217,7 +254,7 @@ function ProductPage() {
           <button
             onClick={() => {
               add(product, qty);
-              window.location.href = "/checkout";
+              void navigate({ to: "/checkout" });
             }}
             className="flex-1 rounded-full bg-primary py-2.5 text-sm font-bold text-primary-foreground"
           >

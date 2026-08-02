@@ -13,6 +13,7 @@ export interface Product {
   slug: string;
   description: string;
   category: string;
+  brand?: string;
   categoryId?: string;
   categoryName?: string;
   // Pricing

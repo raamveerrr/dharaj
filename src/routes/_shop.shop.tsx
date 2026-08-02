@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ProductCard } from "@/components/customer/ProductCard";
-import { categories } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { ProductService } from "@/services/productService";
+import { CategoryService } from "@/services/categoryService";
+import type { Product } from "@/types/product";
 
 export const Route = createFileRoute("/_shop/shop")({
   loader: async () => ({
@@ -21,9 +22,32 @@ export const Route = createFileRoute("/_shop/shop")({
 });
 
 function ShopPage() {
-  const { products } = Route.useLoaderData();
+  const [products, setProducts] = useState<Product[]>([]);
   const [cat, setCat] = useState<string | null>(null);
   const [sort, setSort] = useState("popular");
+  const [categories, setCategories] = useState<Array<{ id: string; slug: string; name: string; icon: string }>>([]);
+
+  useEffect(() => {
+    const unsubscribeProducts = ProductService.subscribeProducts((nextProducts) => {
+      setProducts(nextProducts);
+    });
+    const unsubscribeCategories = CategoryService.subscribeCategories((nextCategories) => {
+      setCategories(
+        nextCategories.map((category) => ({
+          id: category.id,
+          slug: category.slug,
+          name: category.name,
+          icon: category.slug.includes("ghee") ? "🧈" : category.slug.includes("pickle") ? "🥭" : category.slug.includes("spice") ? "🌶️" : category.slug.includes("cookie") ? "🍪" : category.slug.includes("gulkand") ? "🌹" : category.slug.includes("amla") ? "🟢" : category.slug.includes("pulse") ? "🌾" : "🥜",
+        })),
+      );
+    });
+
+    return () => {
+      unsubscribeProducts();
+      unsubscribeCategories();
+    };
+  }, []);
+
   let list = cat ? products.filter((p) => p.category === cat) : products;
   list = [...list].sort((a, b) => {
     if (sort === "price-asc") return a.price - b.price;

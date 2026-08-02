@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useWishlist } from "@/stores/wishlist";
-import { products } from "@/lib/data";
 import { ProductCard } from "@/components/customer/ProductCard";
+import { ProductService } from "@/services/productService";
+import type { Product } from "@/types/product";
 
 export const Route = createFileRoute("/_shop/wishlist")({
   head: () => ({
@@ -18,6 +20,22 @@ export const Route = createFileRoute("/_shop/wishlist")({
 
 function WishlistPage() {
   const ids = useWishlist((s) => s.ids);
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    let active = true;
+
+    const load = async () => {
+      const data = await ProductService.getProducts();
+      if (active) setProducts(data);
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const items = products.filter((p) => ids.includes(p.id));
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">

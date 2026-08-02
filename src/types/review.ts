@@ -15,4 +15,5 @@ export interface Review {
   status: ReviewStatus;
   variant?: string;
   photos?: string[];
+  isDeleted?: boolean;
 }

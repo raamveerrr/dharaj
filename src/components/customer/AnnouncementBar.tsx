@@ -5,10 +5,15 @@ import { useHomepageContent } from "@/hooks/useHomepageContent";
 export function AnnouncementBar() {
   const { announcements } = useHomepageContent();
   const [i, setI] = useState(0);
+
   useEffect(() => {
+    if (announcements.length <= 1) return;
     const t = setInterval(() => setI((v) => (v + 1) % announcements.length), 3200);
     return () => clearInterval(t);
   }, [announcements.length]);
+
+  if (!announcements.length) return null;
+
   return (
     <div className="bg-primary text-primary-foreground text-xs sm:text-sm">
       <div className="mx-auto flex h-9 max-w-7xl items-center justify-center overflow-hidden px-4">

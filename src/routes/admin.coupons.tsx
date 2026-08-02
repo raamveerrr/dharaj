@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Plus, Edit2, Trash2, Save, X } from "lucide-react";
 import { toast } from "sonner";
@@ -38,6 +39,7 @@ const emptyDraft = (): CouponDraft => ({
 });
 
 function AdminCoupons() {
+  const queryClient = useQueryClient();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -121,9 +123,11 @@ function AdminCoupons() {
 
       if (editingId) {
         await CouponService.updateCoupon(editingId, payload);
+        await queryClient.invalidateQueries({ queryKey: ["coupons"] });
         toast.success("Coupon updated successfully");
       } else {
         await CouponService.createCoupon(payload);
+        await queryClient.invalidateQueries({ queryKey: ["coupons"] });
         toast.success("Coupon created successfully");
       }
 
@@ -141,6 +145,7 @@ function AdminCoupons() {
     setIsSaving(true);
     try {
       await CouponService.deleteCoupon(id);
+      await queryClient.invalidateQueries({ queryKey: ["coupons"] });
       setCoupons((prev) => prev.filter((coupon) => coupon.id !== id));
       toast.success("Coupon deleted");
     } catch (error) {

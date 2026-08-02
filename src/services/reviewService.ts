@@ -4,9 +4,11 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
+  updateDoc,
   where,
 } from "firebase/firestore";
 
@@ -65,6 +67,7 @@ function normalizeReview(raw: Record<string, unknown> & { id?: string }): Review
     status: (raw.status as ReviewStatus | undefined) ?? "approved",
     variant: typeof raw.variant === "string" ? raw.variant : undefined,
     photos: Array.isArray(raw.photos) ? raw.photos.map((photo) => String(photo)) : [],
+    isDeleted: Boolean(raw.isDeleted ?? false),
   };
 }
 
@@ -72,7 +75,9 @@ export class ReviewService {
   static async getAllReviews(): Promise<Review[]> {
     const db = getFirebaseDb();
     const snapshot = await getDocs(query(collection(db, COLLECTION), orderBy("createdAt", "desc")));
-    return snapshot.docs.map((item) => normalizeReview({ id: item.id, ...item.data() }));
+    return snapshot.docs
+      .map((item) => normalizeReview({ id: item.id, ...item.data() }))
+      .filter((item) => !item.isDeleted);
   }
 
   static async getReviewsByProduct(productId: string): Promise<Review[]> {
@@ -81,7 +86,22 @@ export class ReviewService {
       query(collection(db, COLLECTION), where("productId", "==", productId), orderBy("createdAt", "desc")),
     );
 
-    return snapshot.docs.map((item) => normalizeReview({ id: item.id, ...item.data() }));
+    return snapshot.docs
+      .map((item) => normalizeReview({ id: item.id, ...item.data() }))
+      .filter((item) => !item.isDeleted && item.status === "approved");
+  }
+
+  static subscribeReviewsByProduct(productId: string, callback: (reviews: Review[]) => void) {
+    const db = getFirebaseDb();
+    return onSnapshot(
+      query(collection(db, COLLECTION), where("productId", "==", productId), orderBy("createdAt", "desc")),
+      (snapshot) => {
+        const reviews = snapshot.docs
+          .map((item) => normalizeReview({ id: item.id, ...item.data() }))
+          .filter((item) => !item.isDeleted && item.status === "approved");
+        callback(reviews);
+      },
+    );
   }
 
   static async createReview(
@@ -108,12 +128,18 @@ export class ReviewService {
       helpful: Number(review.helpful ?? 0),
       verified: Boolean(review.verified ?? true),
       photos: review.photos ?? [],
-      status: review.status ?? "approved",
+      status: review.status ?? "pending",
+      isDeleted: false,
     };
+  }
+
+  static async updateReviewStatus(id: string, status: ReviewStatus) {
+    const db = getFirebaseDb();
+    await updateDoc(doc(db, COLLECTION, id), { status });
   }
 
   static async deleteReview(id: string) {
     const db = getFirebaseDb();
-    await deleteDoc(doc(db, COLLECTION, id));
+    await updateDoc(doc(db, COLLECTION, id), { isDeleted: true });
   }
 }

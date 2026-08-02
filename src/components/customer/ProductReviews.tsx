@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, ThumbsUp, BadgeCheck, X } from "lucide-react";
-import { mockReviews, ratingSummary, type CustomerReview } from "@/lib/reviews";
-import { avatarUrl, reviewPhoto } from "@/lib/mockImages";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ReviewService } from "@/services/reviewService";
+import type { Review } from "@/types/review";
 
 function Stars({ value, size = 14 }: { value: number; size?: number }) {
   return (
@@ -22,15 +22,48 @@ function Stars({ value, size = 14 }: { value: number; size?: number }) {
   );
 }
 
-export function ProductReviews({ productName }: { productName: string }) {
+export function ProductReviews({
+  productId,
+  productName,
+}: {
+  productId?: string;
+  productName: string;
+}) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<number | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const summary = useMemo(() => ratingSummary(mockReviews), []);
-  const list = useMemo(
-    () => (filter ? mockReviews.filter((r) => r.rating === filter) : mockReviews),
-    [filter],
-  );
+  useEffect(() => {
+    if (!productId) {
+      setReviews([]);
+      setLoading(false);
+      return () => {};
+    }
+
+    setLoading(true);
+    const unsubscribe = ReviewService.subscribeReviewsByProduct(productId, (nextReviews) => {
+      setReviews(nextReviews);
+      setLoading(false);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [productId]);
+
+  const summary = useMemo(() => {
+    const total = reviews.length;
+    const dist: Record<1 | 2 | 3 | 4 | 5, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    let sum = 0;
+    for (const review of reviews) {
+      dist[review.rating]++;
+      sum += review.rating;
+    }
+    return { total, average: total ? sum / total : 0, dist };
+  }, [reviews]);
+
+  const list = useMemo(() => (filter ? reviews.filter((r) => r.rating === filter) : reviews), [filter, reviews]);
 
   return (
     <section className="mt-12">
@@ -95,25 +128,42 @@ export function ProductReviews({ productName }: { productName: string }) {
 
       {/* Review cards */}
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        {list.map((r) => (
-          <ReviewCard key={r.id} r={r} />
-        ))}
-        {list.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        {loading ? (
+          <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground md:col-span-2">
+            Loading reviews…
+          </div>
+        ) : list.length > 0 ? (
+          list.map((r) => <ReviewCard key={r.id} r={r} />)
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground md:col-span-2">
             No reviews match this filter.
           </div>
         )}
       </div>
 
       <AnimatePresence>
-        {open && <WriteReviewModal productName={productName} onClose={() => setOpen(false)} />}
+        {open && (
+          <WriteReviewModal
+            productId={productId}
+            productName={productName}
+            onSuccess={(created) => setReviews((current) => [created, ...current])}
+            onClose={() => setOpen(false)}
+          />
+        )}
       </AnimatePresence>
     </section>
   );
 }
 
-function ReviewCard({ r }: { r: CustomerReview }) {
+function ReviewCard({ r }: { r: Review }) {
   const [helpful, setHelpful] = useState(false);
+  const initials = r.name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -121,12 +171,9 @@ function ReviewCard({ r }: { r: CustomerReview }) {
       className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-card"
     >
       <div className="flex items-start gap-3">
-        <img
-          src={avatarUrl(r.name)}
-          alt={r.name}
-          className="h-10 w-10 rounded-full border border-border"
-          loading="lazy"
-        />
+        <div className="grid h-10 w-10 place-items-center rounded-full border border-border bg-secondary font-semibold text-muted-foreground">
+          {initials || "U"}
+        </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold">{r.name}</span>
@@ -158,13 +205,12 @@ function ReviewCard({ r }: { r: CustomerReview }) {
       {r.photos && r.photos.length > 0 && (
         <div className="flex gap-2 overflow-x-auto">
           {r.photos.map((p) => (
-            <img
+            <div
               key={p}
-              src={reviewPhoto(p, 200)}
-              alt="Customer photo"
-              loading="lazy"
-              className="h-20 w-20 shrink-0 rounded-lg border border-border object-cover"
-            />
+              className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary/50 text-xs font-semibold text-muted-foreground"
+            >
+              Photo
+            </div>
           ))}
         </div>
       )}
@@ -189,23 +235,52 @@ function ReviewCard({ r }: { r: CustomerReview }) {
 }
 
 function WriteReviewModal({
+  productId,
   productName,
+  onSuccess,
   onClose,
 }: {
+  productId?: string;
   productName: string;
+  onSuccess: (review: Review) => void;
   onClose: () => void;
 }) {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
+  const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rating) return toast.error("Please select a rating");
     if (!title.trim()) return toast.error("Please add a title");
-    toast.success("Thanks! Your review has been submitted for moderation.");
-    onClose();
+    if (!text.trim()) return toast.error("Please add a review");
+    if (!productId) return toast.error("This product is unavailable for review right now.");
+
+    try {
+      setSubmitting(true);
+      const created = await ReviewService.createReview({
+        name: name.trim() || "Verified Buyer",
+        productId,
+        productName,
+        rating: rating as 1 | 2 | 3 | 4 | 5,
+        title: title.trim(),
+        text: text.trim(),
+        verified: true,
+        helpful: 0,
+        photos: [],
+        status: "pending",
+      });
+      onSuccess(created);
+      toast.success("Thanks! Your review has been submitted for moderation.");
+      onClose();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to submit review.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -270,6 +345,18 @@ function WriteReviewModal({
 
         <div className="mt-4">
           <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Your name
+          </label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter your name"
+            className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+        </div>
+
+        <div className="mt-4">
+          <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Review title
           </label>
           <input
@@ -303,9 +390,10 @@ function WriteReviewModal({
           </button>
           <button
             type="submit"
-            className="flex-1 rounded-full bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover"
+            disabled={submitting}
+            className="flex-1 rounded-full bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
           >
-            Submit Review
+            {submitting ? "Submitting…" : "Submit Review"}
           </button>
         </div>
       </motion.form>

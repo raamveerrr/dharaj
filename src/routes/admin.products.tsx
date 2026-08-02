@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Component, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { Edit2, Plus, Search, Trash2, ChevronDown, ChevronUp, Images } from "lucide-react";
-import { productImages } from "@/lib/mockImages";
 import { inr } from "@/lib/format";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
 import { ProductImageUploader } from "@/components/admin/ProductImageUploader";
@@ -19,7 +19,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CloudinaryService } from "@/services/cloudinaryService";
 import { ProductService } from "@/services/productService";
+import { CategoryService } from "@/services/categoryService";
 import type { Product, ProductImage } from "@/types/product";
+import type { Category } from "@/types/category";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/products")({
@@ -31,6 +33,7 @@ const initialProductForm = {
   name: "",
   description: "",
   category: "",
+  categoryId: "",
   price: "",
   mrp: "",
   stock: "",
@@ -50,6 +53,7 @@ function AdminProductsPage() {
 }
 
 function AdminProducts() {
+  const queryClient = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [editingImages, setEditingImages] = useState<string | null>(null);
   const [productFiles, setProductFiles] = useState<(File | null)[]>(Array.from({ length: 5 }, () => null));
@@ -59,6 +63,7 @@ function AdminProducts() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [productForm, setProductForm] = useState(initialProductForm);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -73,8 +78,12 @@ function AdminProducts() {
     const loadProducts = async () => {
       setIsLoadingProducts(true);
       try {
-        const fetchedProducts = await ProductService.getProducts();
+        const [fetchedProducts, fetchedCategories] = await Promise.all([
+          ProductService.getProducts(),
+          CategoryService.getCategories(),
+        ]);
         setProducts(fetchedProducts);
+        setCategories(fetchedCategories);
       } catch (error) {
         console.error("Failed to load products", error);
         toast.error("Failed to load products");
@@ -83,7 +92,7 @@ function AdminProducts() {
       }
     };
 
-    loadProducts();
+    void loadProducts();
   }, []);
 
   const currentEditingProduct = useMemo(
@@ -104,10 +113,12 @@ function AdminProducts() {
   }, []);
 
   const populateForm = useCallback((product: Product) => {
+    const selectedCategory = categories.find((category) => category.id === product.categoryId) ?? null;
     setProductForm({
       name: product.name,
       description: product.description,
-      category: product.category || "",
+      category: selectedCategory?.slug || product.category || "",
+      categoryId: product.categoryId || selectedCategory?.id || "",
       price: String(product.price),
       mrp: String(product.mrp),
       stock: String(product.stock),
@@ -119,7 +130,7 @@ function AdminProducts() {
     });
     setEditingProductId(product.id);
     setShowAdd(true);
-  }, []);
+  }, [categories]);
 
   const handleDeleteProduct = async (id: string) => {
     if (submittingRef.current) return;
@@ -128,6 +139,8 @@ function AdminProducts() {
     try {
       await ProductService.deleteProduct(id);
       setProducts((prev) => prev.filter((product) => product.id !== id));
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      await queryClient.invalidateQueries({ queryKey: ["homepage"] });
       toast.success("Product deleted successfully");
       setDeleteTargetId(null);
     } catch (error) {
@@ -193,6 +206,8 @@ function AdminProducts() {
         updatedAt: new Date(),
       });
 
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      await queryClient.invalidateQueries({ queryKey: ["homepage"] });
       setProducts((prev) => prev.map((product) => (product.id === editingImages ? { ...product, images: nextImages, updatedAt: new Date() } : product)));
       toast.success("Images updated successfully");
       setEditingImages(null);
@@ -211,7 +226,7 @@ function AdminProducts() {
     const errors: string[] = [];
 
     if (!productForm.name.trim()) errors.push("Product name is required.");
-    if (!productForm.category.trim()) errors.push("Category is required.");
+    if (!productForm.categoryId.trim()) errors.push("Category is required.");
     if (!productForm.price || Number(productForm.price) <= 0) errors.push("Price must be greater than 0.");
     if (!productForm.mrp || Number(productForm.mrp) <= 0) errors.push("MRP must be greater than 0.");
     if (!productForm.stock || Number(productForm.stock) < 0) errors.push("Stock cannot be negative.");
@@ -244,13 +259,14 @@ function AdminProducts() {
 
       setUploadedImages(images);
 
+      const selectedCategory = categories.find((category) => category.id === productForm.categoryId) ?? null;
       const payload: Omit<Product, "id"> = {
         name: productForm.name.trim(),
         slug: createSlug(productForm.name),
         description: productForm.description.trim(),
-        category: productForm.category.trim(),
-        categoryId: "",
-        categoryName: productForm.category.trim(),
+        category: selectedCategory?.slug || productForm.category.trim(),
+        categoryId: selectedCategory?.id || productForm.categoryId.trim(),
+        categoryName: selectedCategory?.name || productForm.category.trim(),
         price: Number(productForm.price) || 0,
         mrp: Number(productForm.mrp) || 0,
         discount: Math.max(0, (Number(productForm.mrp) || 0) - (Number(productForm.price) || 0)),
@@ -273,6 +289,8 @@ function AdminProducts() {
           ...payload,
           updatedAt: new Date(),
         });
+        await queryClient.invalidateQueries({ queryKey: ["products"] });
+        await queryClient.invalidateQueries({ queryKey: ["homepage"] });
         setProducts((prev) => prev.map((product) => (product.id === editingProductId ? { ...product, ...payload, updatedAt: new Date() } : product)));
         toast.success("Product updated successfully");
       } else {
@@ -283,6 +301,8 @@ function AdminProducts() {
           createdAt: new Date(),
           updatedAt: new Date(),
         };
+        await queryClient.invalidateQueries({ queryKey: ["products"] });
+        await queryClient.invalidateQueries({ queryKey: ["homepage"] });
         setProducts((prev) => [createdProduct, ...prev]);
         toast.success("Product created successfully");
       }
@@ -335,12 +355,28 @@ function AdminProducts() {
               value={productForm.description}
               onChange={(e) => updateProductForm("description", e.target.value)}
             />
-            <Field
-              label="Category"
-              placeholder="ghee"
-              value={productForm.category}
-              onChange={(e) => updateProductForm("category", e.target.value)}
-            />
+            <label className="block">
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Category
+              </span>
+              <select
+                value={productForm.categoryId}
+                onChange={(e) => {
+                  const nextCategoryId = e.target.value;
+                  const nextCategory = categories.find((category) => category.id === nextCategoryId) ?? null;
+                  updateProductForm("categoryId", nextCategoryId);
+                  updateProductForm("category", nextCategory?.slug || "");
+                }}
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              >
+                <option value="">Choose category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <Field
               label="Price (₹)"
               placeholder="899"
@@ -409,7 +445,12 @@ function AdminProducts() {
               Product Images (up to 5)
             </label>
             <div className="mt-2">
-              <ProductImageUploader onFilesChange={setProductFiles} />
+              <ProductImageUploader
+                aspect={1}
+                outputWidth={1200}
+                outputHeight={1200}
+                onFilesChange={setProductFiles}
+              />
             </div>
           </div>
           <div className="mt-5 flex flex-col gap-3">
@@ -465,6 +506,9 @@ function AdminProducts() {
             </button>
           </div>
           <ProductImageUploader
+            aspect={1}
+            outputWidth={1200}
+            outputHeight={1200}
             initial={Array.from({ length: 5 }, (_, index) => currentEditingProduct?.images[index]?.url ?? null)}
             onChange={(nextImages) => setImageDraft(nextImages)}
             onFilesChange={(nextFiles) => setImageFiles(nextFiles)}
@@ -508,7 +552,7 @@ function AdminProducts() {
             render: (p) => (
               <div className="flex items-center gap-3">
                 <ImagePlaceholder
-                  src={productImages(p.id, p.category, 1, 200)[0]}
+                  src={p.images?.[0]?.url || ""}
                   alt={p.name}
                   className="h-10 w-10"
                   rounded="rounded-lg"

@@ -4,8 +4,8 @@ import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Leaf, X } from "lucide-react";
 import { useUI } from "@/stores/ui";
-import { categories } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { CategoryService } from "@/services/categoryService";
 
 const aboutItems = [
   "100% Natural",
@@ -27,8 +27,31 @@ export function MobileDrawer() {
   const close = useUI((s) => s.closeMobileMenu);
   const [mounted, setMounted] = useState(false);
   const [expanded, setExpanded] = useState<null | "shop" | "about" | "customers">("shop");
+  const [categories, setCategories] = useState<Array<{ id: string; slug: string; name: string; icon: string }>>([]);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    let active = true;
+
+    const load = async () => {
+      const list = await CategoryService.getCategories();
+      if (!active) return;
+      setCategories(
+        list.map((category) => ({
+          id: category.id,
+          slug: category.slug,
+          name: category.name,
+          icon: category.slug.includes("ghee") ? "🧈" : category.slug.includes("pickle") ? "🥭" : category.slug.includes("spice") ? "🌶️" : category.slug.includes("cookie") ? "🍪" : category.slug.includes("gulkand") ? "🌹" : category.slug.includes("amla") ? "🟢" : category.slug.includes("pulse") ? "🌾" : "🥜",
+        })),
+      );
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;

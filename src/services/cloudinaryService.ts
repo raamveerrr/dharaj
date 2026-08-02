@@ -10,21 +10,39 @@ interface CloudinaryResponse {
   public_id: string;
 }
 
+export interface CloudinaryUploadOptions {
+  width?: number;
+  height?: number;
+  crop?: string;
+  gravity?: string;
+}
+
 export class CloudinaryService {
 
   /**
    * Upload a single image
    */
   static async uploadImage(
-    file: File,
-    folder: string
+    file: File | Blob,
+    folder: string,
+    options?: CloudinaryUploadOptions
   ): Promise<ProductImage> {
+
+    if (!CLOUD_NAME || !UPLOAD_PRESET) {
+      throw new Error("Cloudinary upload is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.");
+    }
 
     const formData = new FormData();
 
     formData.append("file", file);
     formData.append("upload_preset", UPLOAD_PRESET);
     formData.append("folder", `dharaj/${folder}`);
+
+    // Unsigned Cloudinary uploads only allow a small whitelist of request params.
+    // Keep the request intentionally minimal and rely on the upload preset (or
+    // a signed backend flow) to define image transformations instead of sending
+    // them directly in the request body.
+    void options;
 
     const response = await fetch(
       `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
@@ -35,7 +53,16 @@ export class CloudinaryService {
     );
 
     if (!response.ok) {
-      throw new Error("Failed to upload image.");
+      let message = "Failed to upload image.";
+      try {
+        const cloudError = await response.clone().json();
+        if (cloudError?.error?.message) {
+          message = cloudError.error.message;
+        }
+      } catch {
+        // ignore JSON parse errors and fall back to the generic message
+      }
+      throw new Error(message);
     }
 
     const data: CloudinaryResponse = await response.json();
@@ -51,11 +78,12 @@ export class CloudinaryService {
    */
   static async uploadImages(
     files: File[],
-    folder: string
+    folder: string,
+    options?: CloudinaryUploadOptions
   ): Promise<ProductImage[]> {
 
     const uploads = files.map((file) =>
-      this.uploadImage(file, folder)
+      this.uploadImage(file, folder, options)
     );
 
     return Promise.all(uploads);
