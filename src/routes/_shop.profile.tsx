@@ -33,24 +33,10 @@ const tabs = [
 
 function ProfilePage() {
   const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("orders");
-  const [orders, setOrders] = useState<Order[]>([]);
   const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
   const displayName = profile?.displayName ?? user?.displayName ?? user?.email?.split("@")[0] ?? "Guest";
 
-  useEffect(() => {
-    let active = true;
-
-    const load = async () => {
-      const data = await OrderService.listOrders();
-      if (active) setOrders(data);
-    };
-
-    void load();
-    return () => {
-      active = false;
-    };
-  }, []);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
