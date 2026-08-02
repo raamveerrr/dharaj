@@ -109,21 +109,10 @@ function ProfilePage() {
         <section className="rounded-2xl border border-border bg-card p-5 shadow-card">
           {tab === "orders" && (
             <>
-              <h2 className="text-lg font-bold">Recent Orders</h2>
-              <ul className="mt-4 divide-y divide-border">
-                {orders.slice(0, 5).map((o) => (
-                  <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                    <div>
-                      <div className="text-sm font-semibold">{o.id}</div>
-                      <div className="text-xs text-muted-foreground">{o.date} · {o.items.length} items</div>
-                    </div>
-                    <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">
-                      {o.status}
-                    </span>
-                    <div className="text-sm font-bold text-primary">{inr(o.total)}</div>
-                  </li>
-                ))}
-              </ul>
+              <h2 className="text-lg font-bold">Your Orders</h2>
+              <div className="mt-4">
+                <CustomerOrders userId={user?.uid} />
+              </div>
             </>
           )}
           {tab === "wishlist" && <p className="text-sm text-muted-foreground">Your saved items appear on the Wishlist page.</p>}
