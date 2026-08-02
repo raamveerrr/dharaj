@@ -1,21 +1,68 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, CreditCard, MapPin, Wallet } from "lucide-react";
+import { createFileRoute, Link, ClientOnly } from "@tanstack/react-router";
+import { CheckCircle2, CreditCard, Loader2, MapPin, Wallet } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useCart } from "@/stores/cart";
 import { inr } from "@/lib/format";
+import { useAuth } from "@/stores/auth";
+import { AuthInit } from "@/components/auth/AuthInit";
+import { OrderService } from "@/services/orderService";
+import { whatsappOrderUrl } from "@/lib/whatsapp";
+import type { NewOrderInput, Order } from "@/types/order";
 
 export const Route = createFileRoute("/_shop/checkout")({
   head: () => ({
     meta: [
       { title: "Checkout — DHARAJ" },
-      { name: "description", content: "Complete your Dharaj order." },
+      { name: "description", content: "Complete your Dharaj order on WhatsApp." },
       { property: "og:title", content: "Checkout — DHARAJ" },
       { property: "og:description", content: "Address, payment and order summary." },
     ],
   }),
-  component: CheckoutPage,
+  component: () => (
+    <ClientOnly fallback={null}>
+      <AuthInit />
+      <CheckoutPage />
+    </ClientOnly>
+  ),
 });
+
+type FormState = {
+  customerName: string;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  landmark: string;
+  notes: string;
+};
+
+const emptyForm: FormState = {
+  customerName: "",
+  phone: "",
+  email: "",
+  address: "",
+  city: "",
+  state: "",
+  pincode: "",
+  landmark: "",
+  notes: "",
+};
+
+function validate(f: FormState): Partial<Record<keyof FormState, string>> {
+  const e: Partial<Record<keyof FormState, string>> = {};
+  if (f.customerName.trim().length < 3) e.customerName = "Enter your full name.";
+  if (!/^[6-9]\d{9}$/.test(f.phone.replace(/\D/g, "").slice(-10)))
+    e.phone = "Enter a valid 10-digit mobile number.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) e.email = "Enter a valid email address.";
+  if (f.address.trim().length < 6) e.address = "Enter your complete address.";
+  if (f.city.trim().length < 2) e.city = "Enter your city.";
+  if (f.state.trim().length < 2) e.state = "Enter your state.";
+  if (!/^\d{6}$/.test(f.pincode.trim())) e.pincode = "Pincode must be 6 digits.";
+  return e;
+}
 
 function CheckoutPage() {
   const lines = useCart((s) => s.lines);
@@ -23,27 +70,115 @@ function CheckoutPage() {
   const subtotal = useCart((s) => s.subtotal());
   const discount = useCart((s) => s.discount());
   const shipping = useCart((s) => s.shipping());
-  const gst = useCart((s) => s.gst());
   const total = useCart((s) => s.total());
-  const [placed, setPlaced] = useState(false);
-  const [pay, setPay] = useState("cod");
+  const { user, profile } = useAuth();
 
-  if (placed) {
+  const [form, setForm] = useState<FormState>({
+    ...emptyForm,
+    customerName: profile?.displayName ?? user?.displayName ?? "",
+    email: user?.email ?? "",
+    phone: profile?.phone ?? "",
+  });
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
+  const [pay, setPay] = useState("whatsapp");
+
+  const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+    setErrors((prev) => ({ ...prev, [k]: undefined }));
+  };
+
+  const placeOrder = async () => {
+    if (!user) {
+      toast.error("Please sign in to place your order.");
+      return;
+    }
+    const found = validate(form);
+    setErrors(found);
+    if (Object.keys(found).length > 0) {
+      toast.error("Please fix the highlighted fields.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const payload: NewOrderInput = {
+        customerId: user.uid,
+        customerName: form.customerName.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        address: form.address.trim(),
+        city: form.city.trim(),
+        state: form.state.trim(),
+        pincode: form.pincode.trim(),
+        landmark: form.landmark.trim(),
+        notes: form.notes.trim(),
+        items: lines.map((l) => ({
+          productId: l.productId,
+          productName: l.name,
+          image: l.image ?? "",
+          price: l.price,
+          quantity: l.qty,
+          subtotal: l.price * l.qty,
+        })),
+        subtotal,
+        deliveryCharge: shipping,
+        discount,
+        total,
+      };
+
+      const order = await OrderService.createOrder(payload);
+      toast.success(`Order ${order.orderId} created`);
+
+      const url = whatsappOrderUrl(order);
+      const win = typeof window !== "undefined" ? window.open(url, "_blank", "noopener") : null;
+      if (win) {
+        void OrderService.markWhatsappSent(order.orderId).catch(() => {});
+      }
+
+      setPlacedOrder({ ...order, whatsappSent: Boolean(win) });
+      clear();
+    } catch (err) {
+      console.error(err);
+      toast.error((err as Error)?.message ?? "Could not create your order. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (placedOrder) {
     return (
-      <div className="mx-auto max-w-md px-4 py-20 text-center">
+      <div className="mx-auto max-w-md px-4 py-16 text-center">
         <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-primary/10">
           <CheckCircle2 className="h-10 w-10 text-primary" />
         </div>
-        <h1 className="mt-6 text-2xl font-extrabold">Order placed!</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Thank you for shopping with Dharaj. Track your order in your profile.
+        <h1 className="mt-6 text-2xl font-extrabold">Order successfully created</h1>
+        <div className="mt-5 space-y-2 rounded-2xl border border-border bg-card p-5 text-left text-sm shadow-card">
+          <Row k="Order ID" v={placedOrder.orderId} bold />
+          <Row k="Payment Status" v={placedOrder.paymentStatus} />
+          <Row k="Order Status" v={placedOrder.orderStatus} />
+          <Row k="Total" v={inr(placedOrder.total)} bold />
+        </div>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Please complete payment after receiving the QR code from DHARAJ on WhatsApp.
         </p>
-        <Link
-          to="/profile"
-          className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+        <a
+          href={whatsappOrderUrl(placedOrder)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-5 inline-flex rounded-full border border-border bg-background px-6 py-3 text-sm font-bold hover:bg-secondary"
         >
-          View Orders
-        </Link>
+          Re-open WhatsApp
+        </a>
+        <div>
+          <Link
+            to="/profile"
+            className="mt-3 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+          >
+            View Orders
+          </Link>
+        </div>
       </div>
     );
   }
@@ -60,6 +195,15 @@ function CheckoutPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
       <h1 className="text-2xl font-extrabold sm:text-3xl">Checkout</h1>
+      {!user && (
+        <div className="mt-4 rounded-2xl border border-border bg-secondary/50 p-4 text-sm">
+          Please{" "}
+          <Link to="/auth/login" className="font-bold text-primary">
+            sign in
+          </Link>{" "}
+          to place your order and track it later.
+        </div>
+      )}
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-4">
           {/* Address */}
@@ -68,14 +212,24 @@ function CheckoutPage() {
               <MapPin className="h-4 w-4 text-primary" /> Shipping Address
             </h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <Input label="Full Name" placeholder="Aarav Sharma" />
-              <Input label="Phone" placeholder="+91 98111 22001" />
-              <Input label="Email" placeholder="you@example.com" className="sm:col-span-2" />
-              <Input label="Address Line 1" placeholder="Flat / House no." className="sm:col-span-2" />
-              <Input label="City" placeholder="Mumbai" />
-              <Input label="State" placeholder="Maharashtra" />
-              <Input label="Pincode" placeholder="400001" />
-              <Input label="Landmark (optional)" placeholder="Near…" />
+              <Input label="Full Name" placeholder="Aarav Sharma" value={form.customerName} onChange={set("customerName")} error={errors.customerName} />
+              <Input label="Phone" placeholder="9876543210" value={form.phone} onChange={set("phone")} error={errors.phone} />
+              <Input label="Email" placeholder="you@example.com" className="sm:col-span-2" value={form.email} onChange={set("email")} error={errors.email} />
+              <Input label="Address Line 1" placeholder="Flat / House no." className="sm:col-span-2" value={form.address} onChange={set("address")} error={errors.address} />
+              <Input label="City" placeholder="Mumbai" value={form.city} onChange={set("city")} error={errors.city} />
+              <Input label="State" placeholder="Maharashtra" value={form.state} onChange={set("state")} error={errors.state} />
+              <Input label="Pincode" placeholder="400001" value={form.pincode} onChange={set("pincode")} error={errors.pincode} />
+              <Input label="Landmark (optional)" placeholder="Near…" value={form.landmark} onChange={set("landmark")} />
+              <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+                <span className="text-xs font-semibold text-muted-foreground">Notes (optional)</span>
+                <textarea
+                  rows={2}
+                  value={form.notes}
+                  onChange={set("notes")}
+                  placeholder="Delivery instructions…"
+                  className="rounded-xl border border-border bg-secondary/50 px-3 py-2.5 outline-none focus:border-primary"
+                />
+              </label>
             </div>
           </section>
 
@@ -86,9 +240,7 @@ function CheckoutPage() {
             </h2>
             <div className="mt-4 space-y-2">
               {[
-                { id: "cod", label: "Cash on Delivery", desc: "Pay when it arrives" },
-                { id: "upi", label: "UPI", desc: "GPay, PhonePe, Paytm" },
-                { id: "card", label: "Credit / Debit Card", desc: "Secure checkout" },
+                { id: "whatsapp", label: "Pay on WhatsApp (QR)", desc: "We send a payment QR code on WhatsApp" },
               ].map((o) => (
                 <label
                   key={o.id}
@@ -130,21 +282,21 @@ function CheckoutPage() {
             <div className="mt-3 border-t border-border pt-3 space-y-1.5 text-sm">
               <Row k="Subtotal" v={inr(subtotal)} />
               {discount > 0 && <Row k="Discount" v={`− ${inr(discount)}`} />}
-              <Row k="Shipping" v={shipping === 0 ? "Free" : inr(shipping)} />
-              <Row k="GST (5%)" v={inr(gst)} />
+              <Row k="Delivery" v={shipping === 0 ? "Free" : inr(shipping)} />
               <div className="border-t border-border pt-2" />
               <Row k="Total" v={inr(total)} bold />
             </div>
             <button
-              onClick={() => {
-                clear();
-                setPlaced(true);
-                toast.success("Order placed successfully");
-              }}
-              className="mt-4 flex w-full items-center justify-center rounded-full bg-primary py-3 text-sm font-bold text-primary-foreground hover:bg-primary-hover"
+              onClick={placeOrder}
+              disabled={submitting || !user}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-bold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
             >
-              Place Order · {inr(total)}
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {submitting ? "Creating order…" : `Place Order · ${inr(total)}`}
             </button>
+            <p className="mt-2 text-center text-[11px] text-muted-foreground">
+              Your order is saved first, then WhatsApp opens with the details ready to send.
+            </p>
           </div>
         </aside>
       </div>
@@ -152,14 +304,22 @@ function CheckoutPage() {
   );
 }
 
-function Input({ label, className, ...rest }: { label: string; className?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function Input({
+  label,
+  className,
+  error,
+  ...rest
+}: { label: string; className?: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className={`flex flex-col gap-1 text-sm ${className ?? ""}`}>
       <span className="text-xs font-semibold text-muted-foreground">{label}</span>
       <input
         {...rest}
-        className="rounded-xl border border-border bg-secondary/50 px-3 py-2.5 outline-none focus:border-primary"
+        className={`rounded-xl border bg-secondary/50 px-3 py-2.5 outline-none focus:border-primary ${
+          error ? "border-sale" : "border-border"
+        }`}
       />
+      {error && <span className="text-[11px] font-medium text-sale">{error}</span>}
     </label>
   );
 }

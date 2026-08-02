@@ -1,12 +1,10 @@
 import { createFileRoute, Link, useNavigate, ClientOnly } from "@tanstack/react-router";
 import { Bell, MapPin, Package, Settings, User, LogOut, Heart } from "lucide-react";
-import { inr } from "@/lib/format";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/stores/auth";
 import { AuthInit } from "@/components/auth/AuthInit";
-import { OrderService } from "@/services/orderService";
-import type { Order } from "@/types/order";
+import { CustomerOrders } from "@/components/customer/CustomerOrders";
 
 export const Route = createFileRoute("/_shop/profile")({
   head: () => ({
@@ -35,24 +33,10 @@ const tabs = [
 
 function ProfilePage() {
   const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("orders");
-  const [orders, setOrders] = useState<Order[]>([]);
   const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
   const displayName = profile?.displayName ?? user?.displayName ?? user?.email?.split("@")[0] ?? "Guest";
 
-  useEffect(() => {
-    let active = true;
-
-    const load = async () => {
-      const data = await OrderService.listOrders();
-      if (active) setOrders(data);
-    };
-
-    void load();
-    return () => {
-      active = false;
-    };
-  }, []);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
@@ -109,21 +93,10 @@ function ProfilePage() {
         <section className="rounded-2xl border border-border bg-card p-5 shadow-card">
           {tab === "orders" && (
             <>
-              <h2 className="text-lg font-bold">Recent Orders</h2>
-              <ul className="mt-4 divide-y divide-border">
-                {orders.slice(0, 5).map((o) => (
-                  <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                    <div>
-                      <div className="text-sm font-semibold">{o.id}</div>
-                      <div className="text-xs text-muted-foreground">{o.date} · {o.items.length} items</div>
-                    </div>
-                    <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">
-                      {o.status}
-                    </span>
-                    <div className="text-sm font-bold text-primary">{inr(o.total)}</div>
-                  </li>
-                ))}
-              </ul>
+              <h2 className="text-lg font-bold">Your Orders</h2>
+              <div className="mt-4">
+                <CustomerOrders userId={user?.uid} />
+              </div>
             </>
           )}
           {tab === "wishlist" && <p className="text-sm text-muted-foreground">Your saved items appear on the Wishlist page.</p>}
