@@ -87,11 +87,10 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // ---------- readable order-number counter ----------
+    // ---------- order-number counter ----------
     match /counters/{doc} {
       allow read, write: if isSignedIn();
     }
-
 
     // ---------- admin-only collections ----------
     match /inventory/{doc} { allow read, write: if isAdmin(); }

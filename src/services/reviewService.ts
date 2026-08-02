@@ -82,26 +82,23 @@ export class ReviewService {
 
   static async getReviewsByProduct(productId: string): Promise<Review[]> {
     const db = getFirebaseDb();
-    const snapshot = await getDocs(
-      query(collection(db, COLLECTION), where("productId", "==", productId), orderBy("createdAt", "desc")),
-    );
+    const snapshot = await getDocs(query(collection(db, COLLECTION), where("productId", "==", productId)));
 
     return snapshot.docs
       .map((item) => normalizeReview({ id: item.id, ...item.data() }))
-      .filter((item) => !item.isDeleted && item.status === "approved");
+      .filter((item) => !item.isDeleted && item.status === "approved")
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
   static subscribeReviewsByProduct(productId: string, callback: (reviews: Review[]) => void) {
     const db = getFirebaseDb();
-    return onSnapshot(
-      query(collection(db, COLLECTION), where("productId", "==", productId), orderBy("createdAt", "desc")),
-      (snapshot) => {
-        const reviews = snapshot.docs
-          .map((item) => normalizeReview({ id: item.id, ...item.data() }))
-          .filter((item) => !item.isDeleted && item.status === "approved");
-        callback(reviews);
-      },
-    );
+    return onSnapshot(query(collection(db, COLLECTION), where("productId", "==", productId)), (snapshot) => {
+      const reviews = snapshot.docs
+        .map((item) => normalizeReview({ id: item.id, ...item.data() }))
+        .filter((item) => !item.isDeleted && item.status === "approved")
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      callback(reviews);
+    });
   }
 
   static async createReview(

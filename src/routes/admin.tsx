@@ -54,12 +54,12 @@ function ProtectedAdminRoute() {
           await logout();
         }
       } finally {
-        navigate({ to: "/auth/login", replace: true });
+        navigate({ to: "/admin/login", replace: true });
       }
     };
 
     if (!user) {
-      navigate({ to: "/auth/login", replace: true });
+      navigate({ to: "/admin/login", replace: true });
       return;
     }
 

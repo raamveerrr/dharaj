@@ -1,9 +1,9 @@
 import { inr } from "@/lib/format";
 import type { Order } from "@/types/order";
 
-/** Store WhatsApp number in international format without "+" (e.g. 919876543210). */
+/** Store WhatsApp number in international format without "+" (e.g. 919983363435). */
 export const WHATSAPP_NUMBER: string =
-  (import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined)?.replace(/\D/g, "") || "919876543210";
+  (import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined)?.replace(/\D/g, "") || "919983363435";
 
 export function buildWhatsappMessage(order: Order): string {
   const addressLines = [
