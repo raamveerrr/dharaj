@@ -160,11 +160,11 @@ function AdminDashboard() {
               </thead>
               <tbody className="divide-y divide-border">
                 {orders.slice(0, 5).map((o) => (
-                  <tr key={o.id}>
-                    <td className="py-2 font-semibold">{o.id}</td>
-                    <td className="py-2 text-muted-foreground">{o.customer}</td>
+                  <tr key={o.orderId}>
+                    <td className="py-2 font-semibold">{o.orderId}</td>
+                    <td className="py-2 text-muted-foreground">{o.customerName}</td>
                     <td className="py-2">
-                      <span className="rounded-full bg-secondary px-2 py-0.5 text-xs">{o.status}</span>
+                      <span className="rounded-full bg-secondary px-2 py-0.5 text-xs">{o.orderStatus}</span>
                     </td>
                     <td className="py-2 text-right font-semibold">{inr(o.total)}</td>
                   </tr>

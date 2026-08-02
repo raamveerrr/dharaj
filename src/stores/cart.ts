@@ -9,6 +9,16 @@ export interface CartLine {
   mrp: number;
   weight: string;
   qty: number;
+  image?: string;
+}
+
+function firstImage(p: Product): string {
+  const images = p.images as unknown;
+  if (Array.isArray(images) && images.length > 0) {
+    const first = images[0] as { url?: string } | string;
+    return typeof first === "string" ? first : (first?.url ?? "");
+  }
+  return "";
 }
 
 interface CartState {

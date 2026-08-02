@@ -70,7 +70,7 @@ function ProductPage() {
   const discount = pct(product.mrp, product.price);
   const gallery = useMemo(() => {
     if (product.images?.length) {
-      return product.images.map((image) => image.url);
+      return product.images.map((image: { url: string }) => image.url);
     }
 
     return [] as string[];
