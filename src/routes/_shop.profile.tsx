@@ -1,12 +1,10 @@
 import { createFileRoute, Link, useNavigate, ClientOnly } from "@tanstack/react-router";
 import { Bell, MapPin, Package, Settings, User, LogOut, Heart } from "lucide-react";
-import { inr } from "@/lib/format";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/stores/auth";
 import { AuthInit } from "@/components/auth/AuthInit";
-import { OrderService } from "@/services/orderService";
-import type { Order } from "@/types/order";
+import { CustomerOrders } from "@/components/customer/CustomerOrders";
 
 export const Route = createFileRoute("/_shop/profile")({
   head: () => ({
