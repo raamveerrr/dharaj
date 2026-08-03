@@ -31,6 +31,7 @@ import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminCouponsRouteImport } from './routes/admin.coupons'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
+import { Route as AdminBrandingRouteImport } from './routes/admin.branding'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as ShopWishlistRouteImport } from './routes/_shop.wishlist'
 import { Route as ShopShopRouteImport } from './routes/_shop.shop'
@@ -150,6 +151,11 @@ const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminBrandingRoute = AdminBrandingRouteImport.update({
+  id: '/branding',
+  path: '/branding',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/shop': typeof ShopShopRoute
   '/wishlist': typeof ShopWishlistRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/branding': typeof AdminBrandingRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/customers': typeof AdminCustomersRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/shop': typeof ShopShopRoute
   '/wishlist': typeof ShopWishlistRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/branding': typeof AdminBrandingRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/customers': typeof AdminCustomersRoute
@@ -271,6 +279,7 @@ export interface FileRoutesById {
   '/_shop/shop': typeof ShopShopRoute
   '/_shop/wishlist': typeof ShopWishlistRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/branding': typeof AdminBrandingRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/customers': typeof AdminCustomersRoute
@@ -306,6 +315,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/wishlist'
     | '/admin/analytics'
+    | '/admin/branding'
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/customers'
@@ -336,6 +346,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/wishlist'
     | '/admin/analytics'
+    | '/admin/branding'
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/customers'
@@ -369,6 +380,7 @@ export interface FileRouteTypes {
     | '/_shop/shop'
     | '/_shop/wishlist'
     | '/admin/analytics'
+    | '/admin/branding'
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/customers'
@@ -554,6 +566,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCategoriesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/branding': {
+      id: '/admin/branding'
+      path: '/branding'
+      fullPath: '/admin/branding'
+      preLoaderRoute: typeof AdminBrandingRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/analytics': {
       id: '/admin/analytics'
       path: '/analytics'
@@ -648,6 +667,7 @@ const ShopRouteWithChildren = ShopRoute._addFileChildren(ShopRouteChildren)
 
 interface AdminRouteChildren {
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminBrandingRoute: typeof AdminBrandingRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminCouponsRoute: typeof AdminCouponsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
@@ -664,6 +684,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminBrandingRoute: AdminBrandingRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminCouponsRoute: AdminCouponsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
@@ -708,13 +729,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

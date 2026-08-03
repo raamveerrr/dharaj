@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Search, X, ChevronDown, Leaf, Menu } from "lucide-react";
+import { Search, X, ChevronDown, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useUI } from "@/stores/ui";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/common/BrandLogo";
 import { CategoryService } from "@/services/categoryService";
 import { ProductService } from "@/services/productService";
 import type { Product } from "@/types/product";
@@ -11,13 +12,11 @@ import type { Product } from "@/types/product";
 function Logo() {
   return (
     <Link to="/" className="flex items-center gap-2">
-      <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground">
-        <Leaf className="h-5 w-5" />
-      </span>
-      <span className="text-xl font-extrabold tracking-tight text-primary">DHARAJ</span>
+      <BrandLogo slot="header" />
     </Link>
   );
 }
+
 
 function SearchBar({ mobile = false }: { mobile?: boolean }) {
   const [q, setQ] = useState("");

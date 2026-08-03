@@ -25,6 +25,7 @@ const titles: Record<string, string> = {
   "/admin/reviews": "Reviews",
   "/admin/inventory": "Inventory",
   "/admin/analytics": "Analytics",
+  "/admin/branding": "Branding & Logos",
   "/admin/settings": "Settings",
 };
 

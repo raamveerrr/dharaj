@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Leaf, X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { useUI } from "@/stores/ui";
+import { BrandLogo } from "@/components/common/BrandLogo";
 import { cn } from "@/lib/utils";
 import { CategoryService } from "@/services/categoryService";
 
@@ -95,13 +96,9 @@ export function MobileDrawer() {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <Link to="/" onClick={close} className="flex items-center gap-2">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground">
-                  <Leaf className="h-5 w-5" />
-                </span>
-                <span className="text-xl font-extrabold tracking-tight text-primary">
-                  DHARAJ
-                </span>
+                <BrandLogo slot="drawer" />
               </Link>
+
               <button
                 onClick={close}
                 aria-label="Close menu"
