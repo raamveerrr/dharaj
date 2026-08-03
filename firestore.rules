@@ -50,6 +50,7 @@ service cloud.firestore {
     match /homepageHero/{doc} { allow read: if true; allow write: if isAdmin(); }
     match /homepageAnnouncements/{doc} { allow read: if true; allow write: if isAdmin(); }
     match /homepageSettings/{doc} { allow read: if true; allow write: if isAdmin(); }
+    match /siteSettings/{doc} { allow read: if true; allow write: if isAdmin(); }
     match /featuredProducts/{doc} { allow read: if true; allow write: if isAdmin(); }
     match /featuredCategories/{doc} { allow read: if true; allow write: if isAdmin(); }
     match /coupons/{doc}    { allow read: if true; allow write: if isAdmin(); }

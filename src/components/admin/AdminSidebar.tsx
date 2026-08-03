@@ -52,10 +52,13 @@ export function AdminSidebar({
       )}
     >
       <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-turmeric text-foreground">
-          <Leaf className="h-5 w-5" />
-        </span>
-        {!collapsed && <span className="text-lg font-extrabold tracking-tight">DHARAJ</span>}
+        <BrandLogo
+          slot="admin"
+          height={36}
+          fallbackClassName="bg-turmeric text-foreground"
+          wordmarkClassName={cn("text-lg text-sidebar-foreground", collapsed && "hidden")}
+        />
+
         <button
           onClick={onToggle}
           className="ml-auto grid h-8 w-8 place-items-center rounded-full hover:bg-sidebar-accent"
