@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
+  Image as ImageIcon,
   LayoutDashboard,
   Leaf,
   LogOut,

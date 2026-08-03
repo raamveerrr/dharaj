@@ -4,6 +4,7 @@ import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Leaf, X } from "lucide-react";
 import { useUI } from "@/stores/ui";
+import { BrandLogo } from "@/components/common/BrandLogo";
 import { cn } from "@/lib/utils";
 import { CategoryService } from "@/services/categoryService";
 
