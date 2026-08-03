@@ -27,9 +27,11 @@ const items: NavItem[] = [
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/coupons", label: "Coupons", icon: Ticket },
   { to: "/admin/homepage", label: "Homepage", icon: Home },
+  { to: "/admin/branding", label: "Branding", icon: ImageIcon },
   { to: "/admin/reviews", label: "Reviews", icon: MessageSquare },
   { to: "/admin/inventory", label: "Inventory", icon: Warehouse },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

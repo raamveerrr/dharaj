@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Leaf, Instagram, Facebook, Twitter } from "lucide-react";
+import { Instagram, Facebook, Twitter } from "lucide-react";
+import { BrandLogo } from "@/components/common/BrandLogo";
 
 export function Footer() {
   return (
@@ -7,12 +8,8 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-12">
         <div className="grid gap-8 md:grid-cols-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground">
-                <Leaf className="h-5 w-5" />
-              </span>
-              <span className="text-xl font-extrabold tracking-tight text-primary">DHARAJ</span>
-            </div>
+            <BrandLogo slot="footer" />
+
             <p className="mt-3 text-sm text-muted-foreground">
               Pure. Handmade. Delivered fresh. A promise from our farms to your kitchen.
             </p>
