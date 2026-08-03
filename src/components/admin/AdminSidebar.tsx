@@ -7,7 +7,6 @@ import {
   Home,
   Image as ImageIcon,
   LayoutDashboard,
-  Leaf,
   LogOut,
   MessageSquare,
   Package,
@@ -17,7 +16,9 @@ import {
   Users,
   Warehouse,
 } from "lucide-react";
+import { BrandLogo } from "@/components/common/BrandLogo";
 import { cn } from "@/lib/utils";
+
 
 type NavItem = { to: string; label: string; icon: typeof Home; exact?: boolean };
 const items: NavItem[] = [
