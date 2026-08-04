@@ -14,6 +14,10 @@ import {
   type HomepageContent,
   type Banner,
   type Shortcut,
+  type WhyItem,
+  type SocialItem,
+  defaultWhySection,
+  defaultSocialSection,
 } from "@/lib/db/catalog";
 import type { Product } from "@/types/product";
 import type { Category } from "@/types/category";
@@ -31,6 +35,8 @@ function AdminHomepage() {
   const [draft, setDraft] = useState<HomepageContent | null>(null);
   const [bannerFiles, setBannerFiles] = useState<Record<string, File | null>>({});
   const [shortcutFiles, setShortcutFiles] = useState<Record<string, File | null>>({});
+  const [whyFiles, setWhyFiles] = useState<Record<string, File | null>>({});
+  const [socialFiles, setSocialFiles] = useState<Record<string, File | null>>({});
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
   const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
   const [productSearch, setProductSearch] = useState("");
@@ -82,10 +88,46 @@ function AdminHomepage() {
         }),
       );
 
+      const why = content.settings.why ?? defaultWhySection;
+      const social = content.settings.social ?? defaultSocialSection;
+
+      const uploadedWhyItems = await Promise.all(
+        why.items.map(async (item) => {
+          const pendingFile = whyFiles[item.id];
+          if (!pendingFile) return item;
+          const uploaded = await CloudinaryService.uploadImage(pendingFile, "why-dharaj", {
+            width: 1200,
+            height: 900,
+            crop: "fill",
+            gravity: "auto",
+          });
+          return { ...item, imageUrl: uploaded.url };
+        }),
+      );
+
+      const uploadedSocialItems = await Promise.all(
+        social.items.map(async (item) => {
+          const pendingFile = socialFiles[item.id];
+          if (!pendingFile) return item;
+          const uploaded = await CloudinaryService.uploadImage(pendingFile, "social-feed", {
+            width: 720,
+            height: 1280,
+            crop: "fill",
+            gravity: "auto",
+          });
+          return { ...item, imageUrl: uploaded.url };
+        }),
+      );
+
       return saveHomepage({
         ...content,
         banners: uploadedBanners,
         shortcuts: uploadedShortcuts,
+        settings: {
+          ...content.settings,
+          why: { ...why, items: uploadedWhyItems },
+          social: { ...social, items: uploadedSocialItems },
+        },
       });
     },
     onSuccess: () => {
@@ -105,6 +147,8 @@ function AdminHomepage() {
       shortcuts: [],
       featuredProductsHeading: "Featured products",
       featuredCategoriesHeading: "Shop by category",
+      why: defaultWhySection,
+      social: defaultSocialSection,
     },
   };
 
@@ -114,6 +158,15 @@ function AdminHomepage() {
   const patch = (p: Partial<HomepageContent>) => setDraft({ ...(draft ?? fallbackHomepage), ...p });
   const patchSettings = (p: Partial<HomepageContent["settings"]>) =>
     setDraft({ ...(draft ?? fallbackHomepage), settings: { ...(draft ?? fallbackHomepage).settings, ...p } });
+
+  const why = currentDraft.settings.why ?? defaultWhySection;
+  const social = currentDraft.settings.social ?? defaultSocialSection;
+  const patchWhy = (p: Partial<typeof why>) => patchSettings({ why: { ...why, ...p } });
+  const patchSocial = (p: Partial<typeof social>) => patchSettings({ social: { ...social, ...p } });
+  const setWhyItem = (i: number, p: Partial<WhyItem>) =>
+    patchWhy({ items: why.items.map((x, idx) => (idx === i ? { ...x, ...p } : x)) });
+  const setSocialItem = (i: number, p: Partial<SocialItem>) =>
+    patchSocial({ items: social.items.map((x, idx) => (idx === i ? { ...x, ...p } : x)) });
 
   const moveItem = <T extends unknown>(items: T[], index: number, direction: number) => {
     const next = [...items];
@@ -435,6 +488,112 @@ function AdminHomepage() {
             </div>
           </div>
         </div>
+      </Panel>
+
+      <Panel title="Why DHARAJ Section">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Mini label="Heading" value={why.heading} onChange={(v) => patchWhy({ heading: v })} />
+          <Mini label="Subheading" value={why.subheading} onChange={(v) => patchWhy({ subheading: v })} />
+        </div>
+        <label className="mt-3 flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={why.enabled} onChange={(e) => patchWhy({ enabled: e.target.checked })} />
+          Show this section on the homepage
+        </label>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          {why.items.map((item, i) => (
+            <div key={item.id} className="rounded-2xl border border-border bg-background p-3">
+              <ImagePlaceholder src={item.imageUrl} alt={item.title} className="aspect-4/3 w-full" rounded="rounded-xl" />
+              <div className="mt-3 space-y-2">
+                <Mini label="Badge" value={item.badge ?? ""} onChange={(v) => setWhyItem(i, { badge: v })} />
+                <Mini label="Title" value={item.title} onChange={(v) => setWhyItem(i, { title: v })} />
+                <label className="block">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Description</span>
+                  <textarea
+                    value={item.description}
+                    onChange={(e) => setWhyItem(i, { description: e.target.value })}
+                    rows={3}
+                    className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
+                  />
+                </label>
+                <ProductImageUploader
+                  max={1}
+                  aspect={4 / 3}
+                  outputWidth={1200}
+                  outputHeight={900}
+                  value={[item.imageUrl]}
+                  onChange={(imgs) => setWhyItem(i, { imageUrl: imgs[0] ?? "" })}
+                  onFilesChange={(files) => setWhyFiles((prev) => ({ ...prev, [item.id]: files[0] ?? null }))}
+                />
+              </div>
+              <div className="mt-2 flex justify-between gap-2">
+                <div className="flex gap-1">
+                  <IconBtn icon={ChevronUp} onClick={() => i > 0 && patchWhy({ items: moveItem(why.items, i, -1) })} />
+                  <IconBtn icon={ChevronDown} onClick={() => i < why.items.length - 1 && patchWhy({ items: moveItem(why.items, i, 1) })} />
+                </div>
+                <IconBtn icon={Trash2} color="text-sale" onClick={() => patchWhy({ items: why.items.filter((_, idx) => idx !== i) })} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <AddBtn
+          onClick={() =>
+            patchWhy({
+              items: [...why.items, { id: uid(), title: "New highlight", description: "", imageUrl: "", badge: "" }],
+            })
+          }
+        >
+          Add highlight
+        </AddBtn>
+      </Panel>
+
+      <Panel title="Instagram / Reviews Feed">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Mini label="Heading" value={social.heading} onChange={(v) => patchSocial({ heading: v })} />
+          <Mini label="Subheading" value={social.subheading} onChange={(v) => patchSocial({ subheading: v })} />
+        </div>
+        <label className="mt-3 flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={social.enabled} onChange={(e) => patchSocial({ enabled: e.target.checked })} />
+          Show this section on the homepage
+        </label>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {social.items.map((item, i) => (
+            <div key={item.id} className="rounded-2xl border border-border bg-background p-3">
+              <ImagePlaceholder src={item.imageUrl} alt={item.caption} className="aspect-9/16 w-full" rounded="rounded-xl" />
+              <div className="mt-3 space-y-2">
+                <Mini label="Handle" value={item.handle} onChange={(v) => setSocialItem(i, { handle: v })} />
+                <Mini label="Caption" value={item.caption} onChange={(v) => setSocialItem(i, { caption: v })} />
+                <Mini label="Post link" value={item.href} onChange={(v) => setSocialItem(i, { href: v })} />
+                <ProductImageUploader
+                  max={1}
+                  aspect={9 / 16}
+                  outputWidth={720}
+                  outputHeight={1280}
+                  value={[item.imageUrl]}
+                  onChange={(imgs) => setSocialItem(i, { imageUrl: imgs[0] ?? "" })}
+                  onFilesChange={(files) => setSocialFiles((prev) => ({ ...prev, [item.id]: files[0] ?? null }))}
+                />
+              </div>
+              <div className="mt-2 flex justify-between gap-2">
+                <div className="flex gap-1">
+                  <IconBtn icon={ChevronUp} onClick={() => i > 0 && patchSocial({ items: moveItem(social.items, i, -1) })} />
+                  <IconBtn icon={ChevronDown} onClick={() => i < social.items.length - 1 && patchSocial({ items: moveItem(social.items, i, 1) })} />
+                </div>
+                <IconBtn icon={Trash2} color="text-sale" onClick={() => patchSocial({ items: social.items.filter((_, idx) => idx !== i) })} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <AddBtn
+          onClick={() =>
+            patchSocial({
+              items: [...social.items, { id: uid(), imageUrl: "", caption: "", handle: "@dharaj", href: "" }],
+            })
+          }
+        >
+          Add post
+        </AddBtn>
       </Panel>
 
       <Panel title="Circular Shortcut Buttons">
