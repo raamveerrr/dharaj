@@ -7,6 +7,8 @@ import { ShortcutCircle } from "@/components/customer/ShortcutCircle";
 import { ProductCard } from "@/components/customer/ProductCard";
 import { ImagePlaceholder } from "@/components/common/ImagePlaceholder";
 import { useHomepageContent } from "@/hooks/useHomepageContent";
+import { WhyDharaj } from "@/components/customer/WhyDharaj";
+import { SocialFeed } from "@/components/customer/SocialFeed";
 import { ProductService } from "@/services/productService";
 import { CategoryService } from "@/services/categoryService";
 import type { Product } from "@/types/product";
@@ -34,7 +36,7 @@ export const Route = createFileRoute("/_shop/")({
 });
 
 function Home() {
-  const { shortcuts } = useHomepageContent();
+  const { shortcuts, settings } = useHomepageContent();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Array<{ id: string; slug: string; name: string; tagline: string; image?: string }>>([]);
 
@@ -59,7 +61,6 @@ function Home() {
   }, []);
 
   const bestSellers = products.filter((p) => p.bestSeller);
-  const newArrivals = products.filter((p) => p.newArrival);
   return (
     <div className="mx-auto max-w-7xl space-y-14 px-4 py-6">
       <HeroSlider />
@@ -126,35 +127,9 @@ function Home() {
         </div>
       </section>
 
-      {/* Promo banner */}
-      <section className="relative overflow-hidden rounded-3xl bg-primary p-8 text-primary-foreground sm:p-12">
-        <div className="relative z-10 max-w-xl">
-          <span className="inline-block rounded-full bg-primary-foreground/15 px-3 py-1 text-xs font-semibold uppercase tracking-widest">
-            Limited Offer
-          </span>
-          <h2 className="mt-3 text-2xl font-extrabold sm:text-4xl">
-            Bring home the taste of tradition
-          </h2>
-          <p className="mt-2 text-sm text-primary-foreground/80 sm:text-base">
-            Flat 15% off on your first order. Use code DHARAJ15 at checkout.
-          </p>
-          <Link
-            to="/shop"
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-turmeric px-5 py-2.5 text-sm font-bold text-foreground hover:brightness-95"
-          >
-            Shop Now <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-turmeric/30 blur-2xl" />
-      </section>
+      <WhyDharaj section={settings.why} />
 
-      <Section title="New Arrivals" href="/shop">
-        <Grid>
-          {newArrivals.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </Grid>
-      </Section>
+      <SocialFeed section={settings.social} />
     </div>
   );
 }
