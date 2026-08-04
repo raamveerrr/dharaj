@@ -362,10 +362,42 @@ export interface Announcement {
   text: string;
 }
 
+export interface WhyItem {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  badge?: string;
+}
+
+export interface WhySection {
+  enabled: boolean;
+  heading: string;
+  subheading: string;
+  items: WhyItem[];
+}
+
+export interface SocialItem {
+  id: string;
+  imageUrl: string;
+  caption: string;
+  handle: string;
+  href: string;
+}
+
+export interface SocialSection {
+  enabled: boolean;
+  heading: string;
+  subheading: string;
+  items: SocialItem[];
+}
+
 export interface HomepageSettings {
   shortcuts: Shortcut[];
   featuredProductsHeading?: string;
   featuredCategoriesHeading?: string;
+  why?: WhySection;
+  social?: SocialSection;
   [key: string]: unknown;
 }
 
@@ -378,6 +410,20 @@ export interface HomepageContent {
   settings: HomepageSettings;
 }
 
+export const defaultWhySection: WhySection = {
+  enabled: true,
+  heading: "Why DHARAJ",
+  subheading: "Pure, traditional and honestly made — here is what sets us apart.",
+  items: [],
+};
+
+export const defaultSocialSection: SocialSection = {
+  enabled: true,
+  heading: "Join Us on Instagram",
+  subheading: "Tap, shop, and explore authentic stories from our customers and creators.",
+  items: [],
+};
+
 const emptyHomepage: HomepageContent = {
   banners: [],
   shortcuts: [],
@@ -388,8 +434,11 @@ const emptyHomepage: HomepageContent = {
     shortcuts: [],
     featuredProductsHeading: "Featured products",
     featuredCategoriesHeading: "Shop by category",
+    why: defaultWhySection,
+    social: defaultSocialSection,
   },
 };
+
 
 const heroCollection = () => collection(getFirebaseDb(), "homepageHero");
 const announcementCollection = () => collection(getFirebaseDb(), "homepageAnnouncements");
