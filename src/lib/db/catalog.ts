@@ -525,7 +525,9 @@ export async function saveHomepage(content: HomepageContent): Promise<void> {
       shortcuts: Array.isArray(content.shortcuts) ? content.shortcuts : [],
       featuredProductsHeading: content.settings?.featuredProductsHeading ?? "Featured products",
       featuredCategoriesHeading: content.settings?.featuredCategoriesHeading ?? "Shop by category",
-      updatedAt: serverTimestamp(),
+      why: { ...defaultWhySection, ...(content.settings?.why ?? {}) },
+      social: { ...defaultSocialSection, ...(content.settings?.social ?? {}) },
+
     },
     { merge: true },
   );
