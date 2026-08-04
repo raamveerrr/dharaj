@@ -527,6 +527,7 @@ export async function saveHomepage(content: HomepageContent): Promise<void> {
       featuredCategoriesHeading: content.settings?.featuredCategoriesHeading ?? "Shop by category",
       why: { ...defaultWhySection, ...(content.settings?.why ?? {}) },
       social: { ...defaultSocialSection, ...(content.settings?.social ?? {}) },
+      updatedAt: serverTimestamp(),
 
     },
     { merge: true },
