@@ -478,7 +478,10 @@ export async function getHomepage(): Promise<HomepageContent> {
       settings: {
         ...settingsData,
         shortcuts,
+        why: { ...defaultWhySection, ...((settingsData.why as WhySection) ?? {}) },
+        social: { ...defaultSocialSection, ...((settingsData.social as SocialSection) ?? {}) },
       } as HomepageSettings,
+
     };
   } catch (error) {
     console.warn("Failed to load homepage content", error);
