@@ -163,3 +163,10 @@
     display: none;
   }
 }
+
+/* Hero banner artwork: fill the cinematic frame while keeping the subject centered */
+.hero-image img {
+  object-fit: cover;
+  object-position: center 40%;
+}
+
