@@ -39,6 +39,7 @@ import { Route as ShopProfileRouteImport } from './routes/_shop.profile'
 import { Route as ShopCheckoutRouteImport } from './routes/_shop.checkout'
 import { Route as ShopCartRouteImport } from './routes/_shop.cart'
 import { Route as ShopAboutRouteImport } from './routes/_shop.about'
+import { Route as ApiPublicBusinessEnquiryRouteImport } from './routes/api/public/business-enquiry'
 import { Route as ShopProductIdRouteImport } from './routes/_shop.product.$id'
 import { Route as ShopCategorySlugRouteImport } from './routes/_shop.category.$slug'
 
@@ -191,6 +192,12 @@ const ShopAboutRoute = ShopAboutRouteImport.update({
   path: '/about',
   getParentRoute: () => ShopRoute,
 } as any)
+const ApiPublicBusinessEnquiryRoute =
+  ApiPublicBusinessEnquiryRouteImport.update({
+    id: '/api/public/business-enquiry',
+    path: '/api/public/business-enquiry',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ShopProductIdRoute = ShopProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
@@ -234,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/category/$slug': typeof ShopCategorySlugRoute
   '/product/$id': typeof ShopProductIdRoute
+  '/api/public/business-enquiry': typeof ApiPublicBusinessEnquiryRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
@@ -266,6 +274,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/category/$slug': typeof ShopCategorySlugRoute
   '/product/$id': typeof ShopProductIdRoute
+  '/api/public/business-enquiry': typeof ApiPublicBusinessEnquiryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -301,6 +310,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/_shop/category/$slug': typeof ShopCategorySlugRoute
   '/_shop/product/$id': typeof ShopProductIdRoute
+  '/api/public/business-enquiry': typeof ApiPublicBusinessEnquiryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -336,6 +346,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/category/$slug'
     | '/product/$id'
+    | '/api/public/business-enquiry'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -368,6 +379,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/category/$slug'
     | '/product/$id'
+    | '/api/public/business-enquiry'
   id:
     | '__root__'
     | '/_shop'
@@ -402,12 +414,14 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/_shop/category/$slug'
     | '/_shop/product/$id'
+    | '/api/public/business-enquiry'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   ShopRoute: typeof ShopRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  ApiPublicBusinessEnquiryRoute: typeof ApiPublicBusinessEnquiryRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -622,6 +636,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopAboutRouteImport
       parentRoute: typeof ShopRoute
     }
+    '/api/public/business-enquiry': {
+      id: '/api/public/business-enquiry'
+      path: '/api/public/business-enquiry'
+      fullPath: '/api/public/business-enquiry'
+      preLoaderRoute: typeof ApiPublicBusinessEnquiryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_shop/product/$id': {
       id: '/_shop/product/$id'
       path: '/product/$id'
@@ -725,6 +746,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopRoute: ShopRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  ApiPublicBusinessEnquiryRoute: ApiPublicBusinessEnquiryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
