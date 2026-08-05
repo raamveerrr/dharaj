@@ -38,6 +38,7 @@ import { Route as ShopShopRouteImport } from './routes/_shop.shop'
 import { Route as ShopProfileRouteImport } from './routes/_shop.profile'
 import { Route as ShopCheckoutRouteImport } from './routes/_shop.checkout'
 import { Route as ShopCartRouteImport } from './routes/_shop.cart'
+import { Route as ShopBusinessEnquiryRouteImport } from './routes/_shop.business-enquiry'
 import { Route as ShopAboutRouteImport } from './routes/_shop.about'
 import { Route as ApiPublicBusinessEnquiryRouteImport } from './routes/api/public/business-enquiry'
 import { Route as ShopProductIdRouteImport } from './routes/_shop.product.$id'
@@ -187,6 +188,11 @@ const ShopCartRoute = ShopCartRouteImport.update({
   path: '/cart',
   getParentRoute: () => ShopRoute,
 } as any)
+const ShopBusinessEnquiryRoute = ShopBusinessEnquiryRouteImport.update({
+  id: '/business-enquiry',
+  path: '/business-enquiry',
+  getParentRoute: () => ShopRoute,
+} as any)
 const ShopAboutRoute = ShopAboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -214,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/about': typeof ShopAboutRoute
+  '/business-enquiry': typeof ShopBusinessEnquiryRoute
   '/cart': typeof ShopCartRoute
   '/checkout': typeof ShopCheckoutRoute
   '/profile': typeof ShopProfileRoute
@@ -246,6 +253,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/about': typeof ShopAboutRoute
+  '/business-enquiry': typeof ShopBusinessEnquiryRoute
   '/cart': typeof ShopCartRoute
   '/checkout': typeof ShopCheckoutRoute
   '/profile': typeof ShopProfileRoute
@@ -282,6 +290,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/_shop/about': typeof ShopAboutRoute
+  '/_shop/business-enquiry': typeof ShopBusinessEnquiryRoute
   '/_shop/cart': typeof ShopCartRoute
   '/_shop/checkout': typeof ShopCheckoutRoute
   '/_shop/profile': typeof ShopProfileRoute
@@ -319,6 +328,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/about'
+    | '/business-enquiry'
     | '/cart'
     | '/checkout'
     | '/profile'
@@ -351,6 +361,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/about'
+    | '/business-enquiry'
     | '/cart'
     | '/checkout'
     | '/profile'
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/_shop/about'
+    | '/_shop/business-enquiry'
     | '/_shop/cart'
     | '/_shop/checkout'
     | '/_shop/profile'
@@ -629,6 +641,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopCartRouteImport
       parentRoute: typeof ShopRoute
     }
+    '/_shop/business-enquiry': {
+      id: '/_shop/business-enquiry'
+      path: '/business-enquiry'
+      fullPath: '/business-enquiry'
+      preLoaderRoute: typeof ShopBusinessEnquiryRouteImport
+      parentRoute: typeof ShopRoute
+    }
     '/_shop/about': {
       id: '/_shop/about'
       path: '/about'
@@ -662,6 +681,7 @@ declare module '@tanstack/react-router' {
 
 interface ShopRouteChildren {
   ShopAboutRoute: typeof ShopAboutRoute
+  ShopBusinessEnquiryRoute: typeof ShopBusinessEnquiryRoute
   ShopCartRoute: typeof ShopCartRoute
   ShopCheckoutRoute: typeof ShopCheckoutRoute
   ShopProfileRoute: typeof ShopProfileRoute
@@ -674,6 +694,7 @@ interface ShopRouteChildren {
 
 const ShopRouteChildren: ShopRouteChildren = {
   ShopAboutRoute: ShopAboutRoute,
+  ShopBusinessEnquiryRoute: ShopBusinessEnquiryRoute,
   ShopCartRoute: ShopCartRoute,
   ShopCheckoutRoute: ShopCheckoutRoute,
   ShopProfileRoute: ShopProfileRoute,
