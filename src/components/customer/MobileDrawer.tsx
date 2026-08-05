@@ -187,6 +187,7 @@ export function MobileDrawer() {
                 </ul>
               </Accordion>
 
+              <SimpleLink to="/business-enquiry" onClose={close} label="Business Enquiry" />
               <SimpleLink to="/profile" onClose={close} label="Profile" />
             </div>
 

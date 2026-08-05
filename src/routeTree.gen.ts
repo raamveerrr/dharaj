@@ -27,6 +27,7 @@ import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminInventoryRouteImport } from './routes/admin.inventory'
 import { Route as AdminHomepageRouteImport } from './routes/admin.homepage'
+import { Route as AdminEnquiriesRouteImport } from './routes/admin.enquiries'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminCouponsRouteImport } from './routes/admin.coupons'
@@ -38,7 +39,9 @@ import { Route as ShopShopRouteImport } from './routes/_shop.shop'
 import { Route as ShopProfileRouteImport } from './routes/_shop.profile'
 import { Route as ShopCheckoutRouteImport } from './routes/_shop.checkout'
 import { Route as ShopCartRouteImport } from './routes/_shop.cart'
+import { Route as ShopBusinessEnquiryRouteImport } from './routes/_shop.business-enquiry'
 import { Route as ShopAboutRouteImport } from './routes/_shop.about'
+import { Route as ApiPublicBusinessEnquiryRouteImport } from './routes/api/public/business-enquiry'
 import { Route as ShopProductIdRouteImport } from './routes/_shop.product.$id'
 import { Route as ShopCategorySlugRouteImport } from './routes/_shop.category.$slug'
 
@@ -131,6 +134,11 @@ const AdminHomepageRoute = AdminHomepageRouteImport.update({
   path: '/homepage',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminEnquiriesRoute = AdminEnquiriesRouteImport.update({
+  id: '/enquiries',
+  path: '/enquiries',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -186,11 +194,22 @@ const ShopCartRoute = ShopCartRouteImport.update({
   path: '/cart',
   getParentRoute: () => ShopRoute,
 } as any)
+const ShopBusinessEnquiryRoute = ShopBusinessEnquiryRouteImport.update({
+  id: '/business-enquiry',
+  path: '/business-enquiry',
+  getParentRoute: () => ShopRoute,
+} as any)
 const ShopAboutRoute = ShopAboutRouteImport.update({
   id: '/about',
   path: '/about',
   getParentRoute: () => ShopRoute,
 } as any)
+const ApiPublicBusinessEnquiryRoute =
+  ApiPublicBusinessEnquiryRouteImport.update({
+    id: '/api/public/business-enquiry',
+    path: '/api/public/business-enquiry',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ShopProductIdRoute = ShopProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
@@ -207,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/about': typeof ShopAboutRoute
+  '/business-enquiry': typeof ShopBusinessEnquiryRoute
   '/cart': typeof ShopCartRoute
   '/checkout': typeof ShopCheckoutRoute
   '/profile': typeof ShopProfileRoute
@@ -218,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/enquiries': typeof AdminEnquiriesRoute
   '/admin/homepage': typeof AdminHomepageRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/login': typeof AdminLoginRoute
@@ -234,10 +255,12 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/category/$slug': typeof ShopCategorySlugRoute
   '/product/$id': typeof ShopProductIdRoute
+  '/api/public/business-enquiry': typeof ApiPublicBusinessEnquiryRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/about': typeof ShopAboutRoute
+  '/business-enquiry': typeof ShopBusinessEnquiryRoute
   '/cart': typeof ShopCartRoute
   '/checkout': typeof ShopCheckoutRoute
   '/profile': typeof ShopProfileRoute
@@ -249,6 +272,7 @@ export interface FileRoutesByTo {
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/enquiries': typeof AdminEnquiriesRoute
   '/admin/homepage': typeof AdminHomepageRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/login': typeof AdminLoginRoute
@@ -266,6 +290,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/category/$slug': typeof ShopCategorySlugRoute
   '/product/$id': typeof ShopProductIdRoute
+  '/api/public/business-enquiry': typeof ApiPublicBusinessEnquiryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -273,6 +298,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/_shop/about': typeof ShopAboutRoute
+  '/_shop/business-enquiry': typeof ShopBusinessEnquiryRoute
   '/_shop/cart': typeof ShopCartRoute
   '/_shop/checkout': typeof ShopCheckoutRoute
   '/_shop/profile': typeof ShopProfileRoute
@@ -284,6 +310,7 @@ export interface FileRoutesById {
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/enquiries': typeof AdminEnquiriesRoute
   '/admin/homepage': typeof AdminHomepageRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/login': typeof AdminLoginRoute
@@ -301,6 +328,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/_shop/category/$slug': typeof ShopCategorySlugRoute
   '/_shop/product/$id': typeof ShopProductIdRoute
+  '/api/public/business-enquiry': typeof ApiPublicBusinessEnquiryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -309,6 +337,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/about'
+    | '/business-enquiry'
     | '/cart'
     | '/checkout'
     | '/profile'
@@ -320,6 +349,7 @@ export interface FileRouteTypes {
     | '/admin/coupons'
     | '/admin/customers'
     | '/admin/dashboard'
+    | '/admin/enquiries'
     | '/admin/homepage'
     | '/admin/inventory'
     | '/admin/login'
@@ -336,10 +366,12 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/category/$slug'
     | '/product/$id'
+    | '/api/public/business-enquiry'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
     | '/about'
+    | '/business-enquiry'
     | '/cart'
     | '/checkout'
     | '/profile'
@@ -351,6 +383,7 @@ export interface FileRouteTypes {
     | '/admin/coupons'
     | '/admin/customers'
     | '/admin/dashboard'
+    | '/admin/enquiries'
     | '/admin/homepage'
     | '/admin/inventory'
     | '/admin/login'
@@ -368,12 +401,14 @@ export interface FileRouteTypes {
     | '/admin'
     | '/category/$slug'
     | '/product/$id'
+    | '/api/public/business-enquiry'
   id:
     | '__root__'
     | '/_shop'
     | '/admin'
     | '/auth'
     | '/_shop/about'
+    | '/_shop/business-enquiry'
     | '/_shop/cart'
     | '/_shop/checkout'
     | '/_shop/profile'
@@ -385,6 +420,7 @@ export interface FileRouteTypes {
     | '/admin/coupons'
     | '/admin/customers'
     | '/admin/dashboard'
+    | '/admin/enquiries'
     | '/admin/homepage'
     | '/admin/inventory'
     | '/admin/login'
@@ -402,12 +438,14 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/_shop/category/$slug'
     | '/_shop/product/$id'
+    | '/api/public/business-enquiry'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   ShopRoute: typeof ShopRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  ApiPublicBusinessEnquiryRoute: typeof ApiPublicBusinessEnquiryRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -538,6 +576,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminHomepageRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/enquiries': {
+      id: '/admin/enquiries'
+      path: '/enquiries'
+      fullPath: '/admin/enquiries'
+      preLoaderRoute: typeof AdminEnquiriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/dashboard': {
       id: '/admin/dashboard'
       path: '/dashboard'
@@ -615,12 +660,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopCartRouteImport
       parentRoute: typeof ShopRoute
     }
+    '/_shop/business-enquiry': {
+      id: '/_shop/business-enquiry'
+      path: '/business-enquiry'
+      fullPath: '/business-enquiry'
+      preLoaderRoute: typeof ShopBusinessEnquiryRouteImport
+      parentRoute: typeof ShopRoute
+    }
     '/_shop/about': {
       id: '/_shop/about'
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof ShopAboutRouteImport
       parentRoute: typeof ShopRoute
+    }
+    '/api/public/business-enquiry': {
+      id: '/api/public/business-enquiry'
+      path: '/api/public/business-enquiry'
+      fullPath: '/api/public/business-enquiry'
+      preLoaderRoute: typeof ApiPublicBusinessEnquiryRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_shop/product/$id': {
       id: '/_shop/product/$id'
@@ -641,6 +700,7 @@ declare module '@tanstack/react-router' {
 
 interface ShopRouteChildren {
   ShopAboutRoute: typeof ShopAboutRoute
+  ShopBusinessEnquiryRoute: typeof ShopBusinessEnquiryRoute
   ShopCartRoute: typeof ShopCartRoute
   ShopCheckoutRoute: typeof ShopCheckoutRoute
   ShopProfileRoute: typeof ShopProfileRoute
@@ -653,6 +713,7 @@ interface ShopRouteChildren {
 
 const ShopRouteChildren: ShopRouteChildren = {
   ShopAboutRoute: ShopAboutRoute,
+  ShopBusinessEnquiryRoute: ShopBusinessEnquiryRoute,
   ShopCartRoute: ShopCartRoute,
   ShopCheckoutRoute: ShopCheckoutRoute,
   ShopProfileRoute: ShopProfileRoute,
@@ -672,6 +733,7 @@ interface AdminRouteChildren {
   AdminCouponsRoute: typeof AdminCouponsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminEnquiriesRoute: typeof AdminEnquiriesRoute
   AdminHomepageRoute: typeof AdminHomepageRoute
   AdminInventoryRoute: typeof AdminInventoryRoute
   AdminLoginRoute: typeof AdminLoginRoute
@@ -689,6 +751,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCouponsRoute: AdminCouponsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminDashboardRoute: AdminDashboardRoute,
+  AdminEnquiriesRoute: AdminEnquiriesRoute,
   AdminHomepageRoute: AdminHomepageRoute,
   AdminInventoryRoute: AdminInventoryRoute,
   AdminLoginRoute: AdminLoginRoute,
@@ -725,6 +788,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopRoute: ShopRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  ApiPublicBusinessEnquiryRoute: ApiPublicBusinessEnquiryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

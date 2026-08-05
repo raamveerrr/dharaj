@@ -93,6 +93,22 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
+    // ---------- business enquiries ----------
+    match /businessEnquiries/{doc} {
+      // Anyone may submit an enquiry, always starting as "New".
+      allow create: if request.resource.data.status == 'New'
+        && request.resource.data.name is string
+        && request.resource.data.email is string
+        && request.resource.data.message is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.email.size() <= 255
+        && request.resource.data.message.size() <= 2000;
+
+      // Only admins may read, update status, or delete.
+      allow read, update, delete: if isAdmin();
+    }
+
     // ---------- admin-only collections ----------
     match /inventory/{doc} { allow read, write: if isAdmin(); }
     match /analytics/{doc} { allow read, write: if isAdmin(); }

@@ -28,6 +28,7 @@ const items: NavItem[] = [
   { to: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/coupons", label: "Coupons", icon: Ticket },
+  { to: "/admin/enquiries", label: "Enquiries", icon: MessageSquare },
   { to: "/admin/homepage", label: "Homepage", icon: Home },
   { to: "/admin/branding", label: "Branding", icon: ImageIcon },
   { to: "/admin/reviews", label: "Reviews", icon: MessageSquare },

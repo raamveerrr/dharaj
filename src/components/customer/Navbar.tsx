@@ -234,6 +234,14 @@ export function Navbar() {
             </AnimatePresence>
           </div>
 
+          <Link
+            to="/business-enquiry"
+            className="rounded-full px-3 py-1.5 hover:bg-secondary"
+            activeProps={{ className: "bg-secondary text-primary" }}
+          >
+            Business Enquiry
+          </Link>
+
           <div
             className="relative"
             onMouseEnter={() => setDropdown("cust")}
