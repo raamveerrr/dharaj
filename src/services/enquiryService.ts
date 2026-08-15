@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
+import { FirebaseError } from "firebase/app";
 import { getFirebaseDb } from "@/lib/firebase";
 import type {
   BusinessEnquiry,
@@ -85,7 +86,10 @@ export class EnquiryService {
         query(collection(db, COLLECTION), orderBy("createdAt", "desc")),
       );
       return snapshot.docs.map((d) => normalize({ id: d.id, ...d.data() }));
-    } catch {
+    } catch (error) {
+      if (error instanceof FirebaseError && error.code === "permission-denied") {
+        throw new Error("Permission denied. Make sure you are signed in as an admin.");
+      }
       const snapshot = await getDocs(collection(db, COLLECTION));
       return snapshot.docs
         .map((d) => normalize({ id: d.id, ...d.data() }))
@@ -95,12 +99,26 @@ export class EnquiryService {
 
   static async updateStatus(id: string, status: EnquiryStatus) {
     const db = getFirebaseDb();
-    await updateDoc(doc(db, COLLECTION, id), { status, updatedAt: serverTimestamp() });
+    try {
+      await updateDoc(doc(db, COLLECTION, id), { status, updatedAt: serverTimestamp() });
+    } catch (error) {
+      if (error instanceof FirebaseError && error.code === "permission-denied") {
+        throw new Error("Permission denied. Make sure you are signed in as an admin.");
+      }
+      throw error;
+    }
   }
 
   static async deleteEnquiry(id: string) {
     const db = getFirebaseDb();
-    await deleteDoc(doc(db, COLLECTION, id));
+    try {
+      await deleteDoc(doc(db, COLLECTION, id));
+    } catch (error) {
+      if (error instanceof FirebaseError && error.code === "permission-denied") {
+        throw new Error("Permission denied. Make sure you are signed in as an admin.");
+      }
+      throw error;
+    }
   }
 }
 

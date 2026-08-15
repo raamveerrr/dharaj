@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate, ClientOnly } from "@tanstack/react-router";
 import { Bell, MapPin, Package, Settings, User, LogOut, Heart } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/stores/auth";
+import { NotificationService, type NotificationItem } from "@/services/notificationService";
 import { AuthInit } from "@/components/auth/AuthInit";
 import { CustomerOrders } from "@/components/customer/CustomerOrders";
 
@@ -36,6 +37,7 @@ function ProfilePage() {
   const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
   const displayName = profile?.displayName ?? user?.displayName ?? user?.email?.split("@")[0] ?? "Guest";
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
 
   return (
@@ -112,8 +114,31 @@ function ProfilePage() {
             <>
               <h2 className="text-lg font-bold">Notifications</h2>
               <ul className="mt-4 space-y-2 text-sm">
-                <li className="rounded-xl bg-secondary/60 p-3">Your order ORD-1042 was delivered.</li>
-                <li className="rounded-xl bg-secondary/60 p-3">Festive Sale is live — 15% off with DHARAJ15.</li>
+                {notifications.length === 0 ? (
+                  <li className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">No notifications</li>
+                ) : (
+                  notifications.map((n) => (
+                    <li key={n.id} className={cn(
+                      "rounded-xl p-3",
+                      n.read ? "bg-secondary/30" : "bg-secondary/60"
+                    )}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="truncate font-semibold">{n.title ?? "Notification"}</div>
+                          {n.body && <div className="text-xs text-muted-foreground">{n.body}</div>}
+                        </div>
+                        {!n.read && (
+                          <button
+                            onClick={() => NotificationService.markAsRead(n.id)}
+                            className="ml-2 rounded-full bg-background px-3 py-1 text-xs font-bold hover:bg-secondary"
+                          >
+                            Mark read
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))
+                )}
               </ul>
             </>
           )}

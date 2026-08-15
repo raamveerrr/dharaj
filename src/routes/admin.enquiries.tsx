@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/admin/DataTable";
 import { EnquiryService } from "@/services/enquiryService";
 import { ENQUIRY_STATUSES, type BusinessEnquiry, type EnquiryStatus } from "@/types/enquiry";
+import { useAuth } from "@/stores/auth";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/enquiries")({
@@ -33,6 +34,8 @@ function AdminEnquiries() {
   const [selected, setSelected] = useState<BusinessEnquiry | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  const { user, profile, loading: authLoading } = useAuth();
+
   const load = async () => {
     setLoading(true);
     try {
@@ -45,8 +48,11 @@ function AdminEnquiries() {
   };
 
   useEffect(() => {
+    if (authLoading || !user || !profile || profile.role !== "admin") {
+      return;
+    }
     void load();
-  }, []);
+  }, [authLoading, user, profile]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -125,7 +131,15 @@ function AdminEnquiries() {
         </div>
       </div>
 
-      {loading ? (
+      {authLoading ? (
+        <div className="flex items-center gap-2 rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Checking admin access…
+        </div>
+      ) : !user || !profile || profile.role !== "admin" ? (
+        <div className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          You must be signed in as an administrator to view business enquiries.
+        </div>
+      ) : loading ? (
         <div className="flex items-center gap-2 rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading enquiries…
         </div>

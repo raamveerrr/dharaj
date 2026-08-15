@@ -3,7 +3,7 @@ import type { Order } from "@/types/order";
 
 /** Store WhatsApp number in international format without "+" (e.g. 919983363435). */
 export const WHATSAPP_NUMBER: string =
-  (import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined)?.replace(/\D/g, "") || "919983363435";
+  (import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined)?.replace(/\D/g, "") || "919799007576";
 
 export function buildWhatsappMessage(order: Order): string {
   const addressLines = [
