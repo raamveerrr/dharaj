@@ -28,8 +28,11 @@ export class CloudinaryService {
     options?: CloudinaryUploadOptions
   ): Promise<ProductImage> {
 
+    // Cloudinary is optional. When it isn't configured (or the unsigned upload
+    // is rejected, e.g. after a domain change), fall back to Firebase Storage
+    // so admins can always upload images.
     if (!CLOUD_NAME || !UPLOAD_PRESET) {
-      throw new Error("Cloudinary upload is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.");
+      return uploadToFirebase(file, folder);
     }
 
     const formData = new FormData();
