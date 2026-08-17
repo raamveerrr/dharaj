@@ -47,13 +47,19 @@ export class CloudinaryService {
     // them directly in the request body.
     void options;
 
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
+    let response: Response;
+    try {
+      response = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+    } catch {
+      // Network/CORS failure (common right after a domain change) — fall back.
+      return uploadToFirebase(file, folder);
+    }
 
     if (!response.ok) {
       let message = "Failed to upload image.";
@@ -65,7 +71,8 @@ export class CloudinaryService {
       } catch {
         // ignore JSON parse errors and fall back to the generic message
       }
-      throw new Error(message);
+      console.warn(`Cloudinary upload failed (${message}); using Firebase Storage instead.`);
+      return uploadToFirebase(file, folder);
     }
 
     const data: CloudinaryResponse = await response.json();
