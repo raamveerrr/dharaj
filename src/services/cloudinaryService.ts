@@ -1,4 +1,13 @@
 import type { ProductImage } from "../types/product";
+import { uploadImage as uploadToFirebaseStorage } from "@/lib/storage";
+
+/** Fallback uploader: stores the file in Firebase Storage. */
+async function uploadToFirebase(file: File | Blob, folder: string): Promise<ProductImage> {
+  const asFile =
+    file instanceof File ? file : new File([file], `${Date.now()}.jpg`, { type: file.type || "image/jpeg" });
+  const url = await uploadToFirebaseStorage(asFile, `dharaj/${folder}`);
+  return { url, publicId: url };
+}
 
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
@@ -28,8 +37,11 @@ export class CloudinaryService {
     options?: CloudinaryUploadOptions
   ): Promise<ProductImage> {
 
+    // Cloudinary is optional. When it isn't configured (or the unsigned upload
+    // is rejected, e.g. after a domain change), fall back to Firebase Storage
+    // so admins can always upload images.
     if (!CLOUD_NAME || !UPLOAD_PRESET) {
-      throw new Error("Cloudinary upload is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.");
+      return uploadToFirebase(file, folder);
     }
 
     const formData = new FormData();
@@ -44,13 +56,19 @@ export class CloudinaryService {
     // them directly in the request body.
     void options;
 
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
+    let response: Response;
+    try {
+      response = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+    } catch {
+      // Network/CORS failure (common right after a domain change) — fall back.
+      return uploadToFirebase(file, folder);
+    }
 
     if (!response.ok) {
       let message = "Failed to upload image.";
@@ -62,7 +80,8 @@ export class CloudinaryService {
       } catch {
         // ignore JSON parse errors and fall back to the generic message
       }
-      throw new Error(message);
+      console.warn(`Cloudinary upload failed (${message}); using Firebase Storage instead.`);
+      return uploadToFirebase(file, folder);
     }
 
     const data: CloudinaryResponse = await response.json();
