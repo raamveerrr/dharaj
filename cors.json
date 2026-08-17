@@ -1,0 +1,27 @@
+[
+  {
+    "origin": [
+      "https://dharaj.com",
+      "https://www.dharaj.com",
+      "https://id-preview--398218a5-9996-492d-a116-b88ff671fd16.lovable.app",
+      "http://localhost:8080"
+    ],
+    "method": ["GET", "HEAD", "PUT", "POST", "DELETE"],
+    "responseHeader": [
+      "Content-Type",
+      "Content-Length",
+      "Content-Range",
+      "Authorization",
+      "x-goog-resumable",
+      "x-goog-upload-command",
+      "x-goog-upload-protocol",
+      "x-goog-upload-offset",
+      "x-goog-upload-header-content-length",
+      "x-goog-upload-header-content-type",
+      "x-goog-upload-status",
+      "x-goog-upload-url",
+      "x-firebase-storage-version"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
