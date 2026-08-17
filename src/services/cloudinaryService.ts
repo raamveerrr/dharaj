@@ -1,4 +1,13 @@
 import type { ProductImage } from "../types/product";
+import { uploadImage as uploadToFirebaseStorage } from "@/lib/storage";
+
+/** Fallback uploader: stores the file in Firebase Storage. */
+async function uploadToFirebase(file: File | Blob, folder: string): Promise<ProductImage> {
+  const asFile =
+    file instanceof File ? file : new File([file], `${Date.now()}.jpg`, { type: file.type || "image/jpeg" });
+  const url = await uploadToFirebaseStorage(asFile, `dharaj/${folder}`);
+  return { url, publicId: url };
+}
 
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
